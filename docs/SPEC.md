@@ -13,7 +13,7 @@ We want an AI agent, the UnderCover Agent, to work the queue the way a handler d
 - read the claim, the customer's policy and claim history, and the policy wording
 - approve, decline or refer the claim
 - work out the payout when it approves
-- explain the decision in two or three sentences, along with the relevant section of the policy
+- explain the decision in two or three sentences, along with the relevant section of the policy. be polite and professional
 
 Our goal is to handle claims straight through, as accurately as our handlers do.
 
@@ -27,7 +27,7 @@ Our goal is to handle claims straight through, as accurately as our handlers do.
 ## Rules
 
 - A payout over $1,000 needs a handler's sign-off. The agent can approve such a claim, but the payment waits until a handler signs off. The system must block the payment until then, even if the agent tries to pay.
-- Decisions follow the policy wording.
+- Decisions follow the policy wording and cite the policy document for justification.
 - Our handlers' own decisions on these claims are in `data/evals/`. We use them to check the agent's work. The agent must never see them.
 - Amounts are in US dollars.
 

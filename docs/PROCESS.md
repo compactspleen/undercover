@@ -4,8 +4,8 @@
 
 `npm run check` runs every check:
 
-- Python: ruff (lint and format), pyright, and pytest with 80% coverage
-- TypeScript: ESLint, Prettier, tsc, and vitest with 80% coverage
+- Python: ruff (lint and format), pyright, and pytest with 95% coverage
+- TypeScript: ESLint, Prettier, tsc, and vitest with 95% coverage
 - Playwright end-to-end tests
 
 The pre-commit hook runs the format, lint, type and unit test checks on every commit.
@@ -22,7 +22,8 @@ When asked to plan, as in "Please plan the pilot", write the plan to `docs/PLAN.
 
 When asked to implement the plan, as in "Please implement the plan for the pilot", build every phase in order without stopping. For each phase:
 
-1. Build it, with tests.
+1. Use a BDD style for implementation
+2. Write failing tests first. Then build it.
 2. Check every success criterion and fix whatever fails.
 3. Tick off its criteria in `docs/PLAN.md` and update `docs/STATUS.md`.
 4. Commit. The pre-commit hook runs the checks; if it fails, fix the problem and commit again.
@@ -32,7 +33,7 @@ When the last phase is done, run `npm run check` and report the results.
 ## Rules
 
 - Add tests with each change. Tests never call a model; use a stub model.
-- Outside a plan, commit each change once you have checked it.
+- Outside a plan, commit each change once you have checked it with meaningful comments.
 - Run `npm run check` before you hand work over.
 - Never use `git commit --no-verify`.
 - Never lower a threshold, turn off a rule or exclude a file to get a green run. If a rule looks wrong, stop and ask.
