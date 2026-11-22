@@ -152,7 +152,7 @@ The agent's tools, its run and the command line. The backend already enforces th
 ### Implementation
 
 - `agent/` gets tools for `get_claim`, `get_policy`, `get_claim_history`, `get_policy_wording`, `record_decision` and `pay_claim`. Each calls the backend's API and nothing else, so the agent never reads `data/`
-- The `get_claim` tool leaves out the claim's decision, payment and steps
+- The `get_claim` tool leaves out the claim's decision, payment, sign-off and steps
 - A 409 or 422 from the backend becomes the tool's result, with the backend's reason. Any other error propagates and stops the run
 - `run(claim_id, thread_id)` fetches the instructions from `GET /api/instructions`, starts the claim, streams the agent and posts each tool call, a summary of each tool result and the final reply as steps
 - When the agent finishes, `run` raises an error if there's no decision, or "approved but not paid" if it approved within the limit and didn't pay
@@ -163,28 +163,28 @@ The agent's tools, its run and the command line. The backend already enforces th
 
 With pytest, a stub model and the backend in-process:
 
-- [ ] The stub model gets the text of `backend/instructions.md` as its instructions
-- [ ] Working CLM-1001 through to an approval and payment leaves the claim `decided` and paid, with steps for each tool call, each result's summary and the final reply
-- [ ] Approving an over-limit claim and then trying to pay leaves it `waiting_for_sign_off` and unpaid, with the refusal recorded as a step
-- [ ] The `get_claim` tool returns CLM-1001 with no decision, payment or steps
-- [ ] Recording a decision on a claim that isn't in progress gives the model the 409 reason as the tool's result
-- [ ] A 500 from the backend propagates and stops the run
-- [ ] A run that ends without a decision raises an error saying so, and the claim stays `in_progress`
-- [ ] A run that approves within the limit and never pays raises "approved but not paid"
+- [x] The stub model gets the text of `backend/instructions.md` as its instructions
+- [x] Working CLM-1001 through to an approval and payment leaves the claim `decided` and paid, with steps for each tool call, each result's summary and the final reply
+- [x] Approving an over-limit claim and then trying to pay leaves it `waiting_for_sign_off` and unpaid, with the refusal recorded as a step
+- [x] The `get_claim` tool returns CLM-1001 with no decision, payment, sign-off or steps
+- [x] Recording a decision on a claim that isn't in progress gives the model the 409 reason as the tool's result
+- [x] A 500 from the backend (a fake one, since the real backend has no way to fail on request) propagates and stops the run
+- [x] A run that ends without a decision raises an error saying so, and the claim stays `in_progress`
+- [x] A run that approves within the limit and never pays raises "approved but not paid"
 
-With pytest, a stub model and a fake backend, for the command line:
+With pytest, a stub model and the backend in-process, for the command line:
 
-- [ ] `uv run -m agent CLM-1001` works only that claim
-- [ ] `uv run -m agent` works every waiting claim in queue order
-- [ ] When a claim fails partway through the queue, the command stops there and names the claim that failed
-- [ ] The output is only claim ids and outcomes, such as `CLM-1001 approve $420.00`, and never a claim's story, documents or tool results
-- [ ] With no backend running, the command says "Start the backend with npm run dev"
-- [ ] The model is `openai/gpt-6-luna` with low reasoning effort, or `MODEL_NAME` when set (the existing test, kept)
+- [x] `uv run -m agent CLM-1001` works only that claim
+- [x] `uv run -m agent` works every waiting claim in queue order
+- [x] When a claim fails partway through the queue, the command stops there and names the claim that failed
+- [x] The output is only claim ids and outcomes, such as `CLM-1001 approve $420.00`, and never a claim's story, documents or tool results
+- [x] With no backend running, the command says "Start the backend with npm run dev"
+- [x] The model is `openai/gpt-6-luna` with low reasoning effort, or `MODEL_NAME` when set (the existing test, kept)
 
 Commands:
 
-- [ ] A search of `agent/` finds no reads of `data/`
-- [ ] `npm run check:python` passes
+- [x] A search of `agent/` finds no reads of `data/`
+- [x] `npm run check:python` passes
 
 ## Phase 4: the queue and the claim in the dashboard
 
