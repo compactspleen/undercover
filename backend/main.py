@@ -1,6 +1,6 @@
 """The UnderCover backend."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -13,7 +13,7 @@ from backend.routes import router
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Create the database on first start."""
     app.state.database_path = database.path_from_environment()
     database.prepare(app.state.database_path)

@@ -1,7 +1,7 @@
 """The operations that change a claim, and the rules they enforce."""
 
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -32,7 +32,7 @@ class Conflict(Exception):
 
 
 @contextmanager
-def transaction(connection: sqlite3.Connection) -> Iterator[None]:
+def transaction(connection: sqlite3.Connection) -> Generator[None]:
     """Run a check and the write that follows it with no other write between."""
     with connection:
         connection.execute("BEGIN IMMEDIATE")
