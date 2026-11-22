@@ -1,8 +1,8 @@
 import type {
+  Approval,
   Claim,
   ClaimStatus,
   ClaimSummary,
-  Decision,
   Handler,
   Policy,
 } from "../api";
@@ -57,7 +57,7 @@ export const CLAIM: Claim = {
   steps: [],
 };
 
-export const APPROVAL: Decision = {
+export const APPROVAL: Approval = {
   decision: "approve",
   payout: 420,
   explanation: "Your flight was canceled, so we cover your costs.",

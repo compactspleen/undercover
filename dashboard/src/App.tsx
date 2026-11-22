@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 import { ClaimPage } from "./ClaimPage";
+import { Instructions } from "./Instructions";
 import { Queue } from "./Queue";
 import { useHash } from "./useLoaded";
 
 const CLAIM_ADDRESS = /^#CLM-\d+$/;
 
 function pageFor(hash: string): ReactNode {
+  if (hash === "#instructions") return <Instructions />;
   if (CLAIM_ADDRESS.test(hash)) {
     return <ClaimPage key={hash} claimId={hash.slice(1)} />;
   }

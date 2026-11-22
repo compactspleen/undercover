@@ -35,3 +35,10 @@ export function formatDate(isoDate: string): string {
     timeZone: "UTC",
   });
 }
+
+export function formatTime(isoTime: string): string {
+  return new Date(isoTime).toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}

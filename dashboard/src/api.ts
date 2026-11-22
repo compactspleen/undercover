@@ -127,6 +127,26 @@ export async function getJson<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+export async function getText(path: string): Promise<string> {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(await reasonFor(response));
+  return response.text();
+}
+
+export async function post(path: string, body: object): Promise<void> {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(await reasonFor(response));
+}
+
+/** The message of an error, such as the backend's reason for refusing. */
+export function reasonOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 /** The backend's reason for refusing, or its status if it gave none. */
 async function reasonFor(response: Response): Promise<string> {
   const body: unknown = await response.json().catch(() => null);

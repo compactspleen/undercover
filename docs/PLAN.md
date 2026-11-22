@@ -228,7 +228,7 @@ The parts of the dashboard that follow the agent as it works and let a handler r
 
 ### Implementation
 
-- A claim's page shows the agent's steps in order, and while the claim is in progress it polls every two seconds, so new steps appear without a reload
+- A claim's page shows the agent's steps in order, and polls every two seconds while it's open, so new steps appear without a reload. It keeps polling after the decision, because the payment and the agent's final reply come after it
 - The instructions page, at `#instructions`, shows the agent's instructions read only, from `GET /api/instructions`
 - A claim waiting for sign-off shows the payout and a sign-off control: choose a handler, then sign off. A refused sign-off shows the backend's reason
 - A claim's page shows its payment, or that the payment waits for sign-off. After sign-off, it shows who signed off and when
@@ -237,20 +237,20 @@ The parts of the dashboard that follow the agent as it works and let a handler r
 
 With vitest, with `fetch` stubbed:
 
-- [ ] A claim's steps show in order
-- [ ] While a claim is in progress, a new step appears within two seconds without a reload
-- [ ] `#instructions` shows the instructions read only
-- [ ] Signing off a claim that's waiting for sign-off shows it as decided, with who signed off, when, and the payment
-- [ ] A refused sign-off shows the backend's reason
-- [ ] A paid claim shows its payment, and an over-limit approval shows that the payment waits for sign-off
+- [x] A claim's steps show in order
+- [x] While a claim is in progress, a new step appears within two seconds without a reload
+- [x] `#instructions` shows the instructions read only
+- [x] Signing off a claim that's waiting for sign-off shows it as decided, with who signed off, when, and the payment
+- [x] A refused sign-off shows the backend's reason
+- [x] A paid claim shows its payment, and an over-limit approval shows that the payment waits for sign-off
 
 In the browser, with the Playwright MCP server:
 
-- [ ] After recording an over-limit approval with the API, the claim shows the sign-off control, and signing off as Dana Whitfield (HND-01) shows the payment
+- [x] After recording an over-limit approval with the API, the claim shows the sign-off control, and signing off as Dana Whitfield (HND-01) shows the payment
 
 Commands:
 
-- [ ] `npm run check:ts` passes
+- [x] `npm run check:ts` passes
 
 ## Phase 6: end to end, and a real run
 

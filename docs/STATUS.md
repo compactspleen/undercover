@@ -10,7 +10,7 @@ The pilot is being built from `docs/PLAN.md`.
   - the rules: a decision only on a claim in progress and only once, and no payment over $1,000 until a handler signs off, which releases it
 - `backend/instructions.md`: the agent's instructions
 - `agent/`: the UnderCover Agent. `run(claim_id, thread_id)` fetches its instructions, starts the claim and works it with six tools that call the backend: `get_claim`, `get_policy`, `get_claim_history`, `get_policy_wording`, `record_decision` and `pay_claim`. It posts each step to the backend as it goes, and fails if the run ends without a decision or approves a claim within the limit without paying it
-- `dashboard/`: the handlers' screens in the brand in `docs/BRAND.md`, in light and dark mode. The queue lists every claim with its status and a count of each status. A claim's page, at an address such as `#CLM-1001`, shows the story, items, documents, policy and plan, and the decision, including "Approved, not paid" for an approval within the limit that wasn't paid
+- `dashboard/`: the handlers' screens in the brand in `docs/BRAND.md`, in light and dark mode. The queue lists every claim with its status and a count of each status. A claim's page, at an address such as `#CLM-1001`, shows the story, items, documents, policy and plan, the decision, the payment, and the agent's steps, refreshed every two seconds. It flags "Approved, not paid" for an approval within the limit that wasn't paid. A claim waiting for sign-off has a control to choose a handler and sign off, which releases the payment. `#instructions` shows the agent's instructions, read only
 - `e2e/`: one test that the dashboard shows the queue
 
 ## Running it

@@ -6,6 +6,10 @@ export function json(body: unknown, status = 200): Answer {
   return () => Response.json(body, { status });
 }
 
+export function text(body: string): Answer {
+  return () => new Response(body);
+}
+
 /** Stub `fetch` with answers keyed by method and path, such as "GET /api/claims". */
 export function fakeBackend(answers: Partial<Record<string, Answer>>) {
   const fetch = vi.fn((path: string, init?: RequestInit) => {

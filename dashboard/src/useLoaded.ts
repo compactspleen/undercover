@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { reasonOf } from "./api";
 
 export type Loaded<T> =
   | { state: "loading" }
@@ -17,10 +18,7 @@ export function useLoaded<T>(
         setLoaded({ state: "ready", value });
       },
       (error: unknown) => {
-        setLoaded({
-          state: "failed",
-          reason: String(error).replace(/^Error: /, ""),
-        });
+        setLoaded({ state: "failed", reason: reasonOf(error) });
       },
     );
   }, [path, read]);
