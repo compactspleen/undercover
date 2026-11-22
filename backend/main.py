@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from backend import database
+from backend.actions import Conflict
 from backend.records import NotFound
 from backend.routes import router
 
@@ -27,6 +28,12 @@ app.include_router(router)
 def not_found(request: Request, error: NotFound) -> JSONResponse:
     """Answer 404 with the reason."""
     return JSONResponse({"detail": str(error)}, status_code=404)
+
+
+@app.exception_handler(Conflict)
+def conflict(request: Request, error: Conflict) -> JSONResponse:
+    """Answer 409 with the reason."""
+    return JSONResponse({"detail": str(error)}, status_code=409)
 
 
 @app.get("/api/health", operation_id="health")

@@ -1,6 +1,7 @@
 """Reading UnderCover's records from the database."""
 
 import sqlite3
+from decimal import Decimal
 
 from backend.models import (
     Claim,
@@ -27,6 +28,11 @@ def claim_row(connection: sqlite3.Connection, claim_id: str) -> dict[str, object
     return row
 
 
+def find_summary(connection: sqlite3.Connection, claim_id: str) -> ClaimSummary:
+    """Return the claim's summary and status."""
+    return ClaimSummary.model_validate(claim_row(connection, claim_id))
+
+
 def list_claims(connection: sqlite3.Connection) -> list[ClaimSummary]:
     """Return the queue in order."""
     rows = connection.execute("SELECT * FROM claims ORDER BY rowid").fetchall()
@@ -49,12 +55,51 @@ def find_claim(connection: sqlite3.Connection, claim_id: str) -> Claim:
                 "SELECT * FROM documents WHERE claim_id = ? ORDER BY rowid",
                 claim_id,
             ),
-            "decision": None,
-            "payment": None,
-            "sign_off": None,
-            "steps": [],
+            "decision": decision_row(connection, claim_id),
+            "payment": connection.execute(
+                "SELECT amount, paid_at FROM payments WHERE claim_id = ?", (claim_id,)
+            ).fetchone(),
+            "sign_off": connection.execute(
+                "SELECT handler_id, name AS handler_name, signed_off_at "
+                "FROM sign_offs JOIN handlers USING (handler_id) WHERE claim_id = ?",
+                (claim_id,),
+            ).fetchone(),
+            "steps": rows(
+                connection,
+                "SELECT kind, text, recorded_at FROM steps "
+                "WHERE claim_id = ? ORDER BY rowid",
+                claim_id,
+            ),
         }
     )
+
+
+def decision_row(
+    connection: sqlite3.Connection, claim_id: str
+) -> dict[str, object] | None:
+    """Return the claim's decision, if it has one, without an empty payout."""
+    row = connection.execute(
+        "SELECT decision, payout, explanation, policy_section FROM decisions "
+        "WHERE claim_id = ?",
+        (claim_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return {name: value for name, value in row.items() if value is not None}
+
+
+def approved_payout(connection: sqlite3.Connection, claim_id: str) -> Decimal:
+    """Return the payout on the claim's approval."""
+    return connection.execute(
+        "SELECT payout FROM decisions WHERE claim_id = ?", (claim_id,)
+    ).fetchone()["payout"]
+
+
+def payout_approval_limit(connection: sqlite3.Connection) -> Decimal:
+    """Return the largest payout that needs no handler's sign-off."""
+    return connection.execute("SELECT * FROM company").fetchone()[
+        "payout_approval_limit"
+    ]
 
 
 def rows(
@@ -112,6 +157,16 @@ def find_history(connection: sqlite3.Connection, claim_id: str) -> ClaimHistory:
         (customer_id,),
     ).fetchall()
     return ClaimHistory.model_validate(customer | {"previous_claims": previous_claims})
+
+
+def find_handler(connection: sqlite3.Connection, handler_id: str) -> Handler:
+    """Return the handler, or raise NotFound."""
+    row = connection.execute(
+        "SELECT * FROM handlers WHERE handler_id = ?", (handler_id,)
+    ).fetchone()
+    if row is None:
+        raise NotFound(f"There is no handler {handler_id}")
+    return Handler.model_validate(row)
 
 
 def list_handlers(connection: sqlite3.Connection) -> list[Handler]:

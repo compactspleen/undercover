@@ -9,11 +9,24 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import PlainTextResponse
 
-from backend import records
+from backend import actions, records
 from backend.database import connect
-from backend.models import Claim, ClaimHistory, ClaimSummary, Handler, Policy
+from backend.models import (
+    Claim,
+    ClaimHistory,
+    ClaimSummary,
+    Decision,
+    Handler,
+    NewStep,
+    Payment,
+    PaymentRequest,
+    Policy,
+    SignOffRequest,
+    Step,
+)
 
 POLICY_WORDING = Path(__file__).parent.parent / "data" / "policy_wording.md"
+INSTRUCTIONS = Path(__file__).parent / "instructions.md"
 
 router = APIRouter(prefix="/api")
 
@@ -69,3 +82,45 @@ def get_policy_wording() -> str:
 def list_handlers(database: Database) -> list[Handler]:
     """List the claims handlers."""
     return records.list_handlers(database)
+
+
+@router.get(
+    "/instructions", operation_id="get_instructions", response_class=MarkdownResponse
+)
+def get_instructions() -> str:
+    """Get the agent's instructions as Markdown."""
+    return INSTRUCTIONS.read_text(encoding="utf-8")
+
+
+@router.post("/claims/{claim_id}/start", operation_id="start_claim")
+def start_claim(claim_id: str, database: Database) -> ClaimSummary:
+    """Move a waiting or in-progress claim to in progress."""
+    return actions.start_claim(database, claim_id)
+
+
+@router.post("/claims/{claim_id}/steps", operation_id="record_step")
+def record_step(claim_id: str, step: NewStep, database: Database) -> Step:
+    """Add one step to the claim's activity."""
+    return actions.record_step(database, claim_id, step)
+
+
+@router.post("/claims/{claim_id}/decision", operation_id="record_decision")
+def record_decision(
+    claim_id: str, decision: Decision, database: Database
+) -> ClaimSummary:
+    """Record the decision on an in-progress claim and set the status."""
+    return actions.record_decision(database, claim_id, decision)
+
+
+@router.post("/claims/{claim_id}/payment", operation_id="pay_claim")
+def pay_claim(claim_id: str, payment: PaymentRequest, database: Database) -> Payment:
+    """Pay the amount on an approved claim, if the rules allow it."""
+    return actions.pay_claim(database, claim_id, payment.amount)
+
+
+@router.post("/claims/{claim_id}/sign-off", operation_id="sign_off")
+def sign_off(
+    claim_id: str, request: SignOffRequest, database: Database
+) -> ClaimSummary:
+    """Sign off an over-limit payout as a handler, which releases the payment."""
+    return actions.sign_off(database, claim_id, request.handler_id)

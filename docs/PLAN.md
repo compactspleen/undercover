@@ -113,7 +113,7 @@ The write operations and the rules they enforce. The payment rule is the heart o
 - The instructions say when to refer: a document the wording asks for is missing, the documents contradict the story or each other, or the wording doesn't settle the claim
 - `get_instructions` serves that file's text
 - `start_claim` moves a waiting or in-progress claim to `in_progress`, and answers 409 for any other status
-- `record_step` adds one step to an in-progress claim's activity, and `get_claim` returns the steps in order
+- `record_step` adds one step to the activity of a claim that has been started, and `get_claim` returns the steps in order. Steps keep arriving after the decision, from the payment and the agent's final reply, so only a waiting claim refuses them
 - `record_decision` takes the three decision types as separate models, so a payout on a `decline` or `refer` is rejected. It works only on an in-progress claim, and only once. An `approve` over the limit in `data/company.json` sets `waiting_for_sign_off`; every other decision sets `decided`
 - `pay_claim` takes the amount and pays only when the claim is approved, the amount equals the payout, it isn't paid already, and the payout is within the limit or signed off. Otherwise it answers 409 with the reason
 - `sign_off` takes a handler id. On a claim waiting for sign-off, it sets `decided`, records who signed off and when, and records the payment
@@ -122,28 +122,28 @@ The write operations and the rules they enforce. The payment rule is the heart o
 
 With pytest:
 
-- [ ] `GET /api/instructions` returns the text of `backend/instructions.md`
-- [ ] `start_claim` moves CLM-1001 from `waiting` to `in_progress`
-- [ ] `start_claim` answers 409 for a decided claim
-- [ ] Two `record_step` calls on an in-progress claim come back from `get_claim` in order
-- [ ] `record_step` answers 409 for a claim that isn't in progress
-- [ ] `record_decision` answers 409 for a claim that's waiting, waiting for sign-off or decided
-- [ ] Recording `approve` with a payout of 420.00 sets the status to `decided`
-- [ ] Recording `approve` with a payout of 1,250.00 sets the status to `waiting_for_sign_off`
-- [ ] Recording `decline` or `refer` sets the status to `decided`
-- [ ] A `decline` with a payout is rejected with 422
-- [ ] A second decision on the same claim answers 409
-- [ ] `pay_claim` pays an approved claim within the limit, and `get_claim` then shows the payment
-- [ ] `pay_claim` answers 409 for each of: an over-limit claim not yet signed off, an amount that differs from the payout, a claim already paid, and a declined or referred claim
-- [ ] `sign_off` by HND-01 on a `waiting_for_sign_off` claim sets it to `decided`, with who signed off and when, and the payment recorded
-- [ ] After that sign-off, `pay_claim` answers 409 as already paid
-- [ ] `sign_off` answers 409 for a claim that isn't waiting for sign-off
-- [ ] `sign_off` answers 404 for an unknown handler
+- [x] `GET /api/instructions` returns the text of `backend/instructions.md`
+- [x] `start_claim` moves CLM-1001 from `waiting` to `in_progress`
+- [x] `start_claim` answers 409 for a decided claim
+- [x] Two `record_step` calls on an in-progress claim come back from `get_claim` in order
+- [x] `record_step` answers 409 for a claim that hasn't been started
+- [x] `record_decision` answers 409 for a claim that's waiting, waiting for sign-off or decided
+- [x] Recording `approve` with a payout of 420.00 sets the status to `decided`
+- [x] Recording `approve` with a payout of 1,250.00 sets the status to `waiting_for_sign_off`
+- [x] Recording `decline` or `refer` sets the status to `decided`
+- [x] A `decline` with a payout is rejected with 422
+- [x] A second decision on the same claim answers 409
+- [x] `pay_claim` pays an approved claim within the limit, and `get_claim` then shows the payment
+- [x] `pay_claim` answers 409 for each of: an over-limit claim not yet signed off, an amount that differs from the payout, a claim already paid, and a declined or referred claim
+- [x] `sign_off` by HND-01 on a `waiting_for_sign_off` claim sets it to `decided`, with who signed off and when, and the payment recorded
+- [x] After that sign-off, `pay_claim` answers 409 as already paid
+- [x] `sign_off` answers 409 for a claim that isn't waiting for sign-off
+- [x] `sign_off` answers 404 for an unknown handler
 
 Reviews and commands:
 
-- [ ] `backend/instructions.md` covers each point above, including the three reasons to refer
-- [ ] `npm run check:python` passes
+- [x] `backend/instructions.md` covers each point above, including the three reasons to refer
+- [x] `npm run check:python` passes
 
 ## Phase 3: the UnderCover Agent
 

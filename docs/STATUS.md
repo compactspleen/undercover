@@ -4,7 +4,11 @@ The pilot is being built from `docs/PLAN.md`.
 
 ## Built so far
 
-- `backend/`: a SQLite database created from `data/` on first start, and the read operations: the queue, a claim, its policy, the customer's claim history, the policy wording and the handlers
+- `backend/`: a SQLite database created from `data/` on first start, and every operation in `docs/PLAN.md`:
+  - reads: the queue, a claim, its policy, the customer's claim history, the policy wording, the agent's instructions and the handlers
+  - writes: starting a claim, recording a step, recording a decision, paying a claim and a handler's sign-off
+  - the rules: a decision only on a claim in progress and only once, and no payment over $1,000 until a handler signs off, which releases it
+- `backend/instructions.md`: the agent's instructions
 - `agent/`: the skeleton's entry point `run(claim_id, thread_id)`, with one tool that calls the health route
 - `dashboard/`: the skeleton's page that shows whether the backend is up
 - `e2e/`: one test of that page
