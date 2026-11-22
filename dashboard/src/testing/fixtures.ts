@@ -2,9 +2,9 @@ import type {
   Approval,
   Claim,
   ClaimStatus,
-  ClaimSummary,
   Handler,
   Policy,
+  QueuedClaim,
 } from "../api";
 
 const STATUSES: ClaimStatus[] = [
@@ -15,8 +15,9 @@ const STATUSES: ClaimStatus[] = [
   "decided",
 ];
 
-export const QUEUE: ClaimSummary[] = Array.from({ length: 25 }, (_, index) => ({
+export const QUEUE: QueuedClaim[] = Array.from({ length: 25 }, (_, index) => ({
   claim_id: `CLM-${String(1001 + index)}`,
+  customer_name: index === 0 ? "Maya Patel" : `Customer ${String(index)}`,
   claim_type: index === 0 ? "trip_delay" : "baggage",
   summary:
     index === 0 ? "Flight home canceled" : `Claim number ${String(index)}`,

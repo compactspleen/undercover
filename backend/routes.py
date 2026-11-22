@@ -23,6 +23,7 @@ from backend.models import (
     Payment,
     PaymentRequest,
     Policy,
+    QueuedClaim,
     SignOffRequest,
     Step,
 )
@@ -80,8 +81,8 @@ def health(request: Request, response: Response) -> Health:
 
 
 @router.get("/claims", operation_id="list_claims")
-def list_claims(database: Database) -> list[ClaimSummary]:
-    """List the claims queue in order, with each claim's status."""
+def list_claims(database: Database) -> list[QueuedClaim]:
+    """List the claims queue in order, with each claim's customer and status."""
     return records.list_claims(database)
 
 

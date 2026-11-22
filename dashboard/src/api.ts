@@ -12,6 +12,10 @@ export interface ClaimSummary {
   decision: Decision | null;
 }
 
+export interface QueuedClaim extends ClaimSummary {
+  customer_name: string;
+}
+
 export interface Item {
   description: string;
   category: string;

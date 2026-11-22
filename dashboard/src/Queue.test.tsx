@@ -1,6 +1,6 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import type { ClaimStatus, ClaimSummary, Decision } from "./api";
+import type { ClaimStatus, Decision, QueuedClaim } from "./api";
 import { Queue } from "./Queue";
 import { fakeBackend, json } from "./testing/fakeBackend";
 import { APPROVAL, QUEUE } from "./testing/fixtures";
@@ -29,9 +29,10 @@ function claim(
   claimId: string,
   status: ClaimStatus,
   decision: Decision | null,
-): ClaimSummary {
+): QueuedClaim {
   return {
     claim_id: claimId,
+    customer_name: "Maya Patel",
     claim_type: "baggage",
     summary: "Bag lost on the flight out",
     amount_claimed: 1250,
@@ -46,10 +47,31 @@ it("lists every claim in order with its details and status", async () => {
   const claims = await rows();
   expect(claims).toHaveLength(25);
   expect(claims[0]?.textContent).toBe(
-    "CLM-1001Trip delayFlight home canceledWaiting$420.00",
+    "CLM-1001Maya PatelTrip delayFlight home canceledWaiting$420.00",
   );
   expect(claims.map((row) => row.querySelector("a")?.textContent)).toEqual(
     QUEUE.map((claim) => claim.claim_id),
+  );
+});
+
+it("names each claim's customer right after the claim", async () => {
+  fakeBackend({ "GET /api/claims": json(QUEUE) });
+  render(<Queue />);
+  await rows();
+  expect(
+    screen.getAllByRole("columnheader").map((header) => header.textContent),
+  ).toEqual([
+    "Claim",
+    "Customer",
+    "Type",
+    "Summary",
+    "Status",
+    "Decision",
+    "Claimed",
+    "Payout",
+  ]);
+  expect(await column("Customer")).toEqual(
+    QUEUE.map((claim) => claim.customer_name),
   );
 });
 

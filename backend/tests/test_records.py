@@ -40,12 +40,20 @@ def test_the_queue_is_in_order_with_each_claims_summary(client: TestClient):
         "amount_claimed": 420.0,
         "status": "waiting",
         "decision": None,
+        "customer_name": "Maya Patel",
     }
     assert [claim["claim_id"] for claim in claims][:3] == [
         "CLM-1001",
         "CLM-1002",
         "CLM-1003",
     ]
+
+
+def test_only_the_queue_names_the_customer(client: TestClient):
+    started = client.post("/api/claims/CLM-1001/start").json()
+    assert started["claim_id"] == "CLM-1001"
+    assert "customer_name" not in started
+    assert "customer_name" not in client.get("/api/claims/CLM-1001").json()
 
 
 def test_amounts_are_json_numbers(client: TestClient):

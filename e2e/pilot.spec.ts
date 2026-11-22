@@ -14,6 +14,9 @@ test("the queue shows 25 waiting claims", async ({ page }) => {
     page.getByRole("heading", { name: "Claims queue" }),
   ).toBeVisible();
   await expect(page.getByRole("table").getByRole("row")).toHaveCount(26);
+  await expect(page.getByRole("row", { name: /^CLM-1001/ })).toContainText(
+    "Maya Patel",
+  );
   await expect(
     page.getByRole("list", { name: "Counts" }).getByRole("listitem"),
   ).toHaveText([

@@ -99,6 +99,16 @@ class ClaimSummary(BaseModel):
     decision: Decision | None
 
 
+class QueuedClaim(ClaimSummary):
+    """A claim as the queue lists it, for handlers.
+
+    Only the queue names the customer. Starting, deciding and signing off a
+    claim return its summary to the agent, so the name stays out of it.
+    """
+
+    customer_name: str
+
+
 class NewStep(BaseModel, extra="forbid"):
     kind: StepKind
     text: Text

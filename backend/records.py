@@ -9,6 +9,7 @@ from backend.models import (
     ClaimSummary,
     Handler,
     Policy,
+    QueuedClaim,
 )
 
 TRIP_COLUMNS = ("destination", "departs_on", "returns_on", "trip_cost")
@@ -36,10 +37,19 @@ def find_summary(connection: sqlite3.Connection, claim_id: str) -> ClaimSummary:
     )
 
 
-def list_claims(connection: sqlite3.Connection) -> list[ClaimSummary]:
-    """Return the queue in order."""
-    rows = connection.execute("SELECT claim_id FROM claims ORDER BY rowid").fetchall()
-    return [find_summary(connection, row["claim_id"]) for row in rows]
+def list_claims(connection: sqlite3.Connection) -> list[QueuedClaim]:
+    """Return the queue in order, naming each claim's customer."""
+    # A LEFT JOIN, so a claim whose customer is missing fails, not vanishes.
+    rows = connection.execute(
+        "SELECT claims.*, customers.name AS customer_name FROM claims "
+        "LEFT JOIN customers USING (customer_id) ORDER BY claims.rowid"
+    ).fetchall()
+    return [
+        QueuedClaim.model_validate(
+            row | {"decision": decision_row(connection, row["claim_id"])}
+        )
+        for row in rows
+    ]
 
 
 def find_claim(connection: sqlite3.Connection, claim_id: str) -> Claim:

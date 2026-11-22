@@ -1,4 +1,4 @@
-import type { ClaimStatus, ClaimSummary } from "./api";
+import type { ClaimStatus, QueuedClaim } from "./api";
 import { getJson } from "./api";
 import { formatClaimType, formatMoney } from "./format";
 import { DecisionLabel, Show, StatusLabel } from "./Show";
@@ -12,7 +12,7 @@ const STATUSES: ClaimStatus[] = [
 ];
 
 export function Queue() {
-  const [claims] = useLoaded("/api/claims", getJson<ClaimSummary[]>);
+  const [claims] = useLoaded("/api/claims", getJson<QueuedClaim[]>);
   return (
     <section className="stack">
       <h1>Claims queue</h1>
@@ -21,7 +21,7 @@ export function Queue() {
   );
 }
 
-function QueueTable({ claims }: Readonly<{ claims: ClaimSummary[] }>) {
+function QueueTable({ claims }: Readonly<{ claims: QueuedClaim[] }>) {
   return (
     <>
       <ul className="counts" aria-label="Counts">
@@ -39,6 +39,7 @@ function QueueTable({ claims }: Readonly<{ claims: ClaimSummary[] }>) {
           <thead>
             <tr>
               <th scope="col">Claim</th>
+              <th scope="col">Customer</th>
               <th scope="col">Type</th>
               <th scope="col">Summary</th>
               <th scope="col">Status</th>
@@ -59,6 +60,7 @@ function QueueTable({ claims }: Readonly<{ claims: ClaimSummary[] }>) {
                     {claim.claim_id}
                   </a>
                 </td>
+                <td>{claim.customer_name}</td>
                 <td>{formatClaimType(claim.claim_type)}</td>
                 <td>{claim.summary}</td>
                 <td>
