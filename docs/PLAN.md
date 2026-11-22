@@ -78,7 +78,7 @@ The database, the seed loading and the read operations. Everything later reads t
 - On start, the backend creates the database if the file doesn't exist and loads it from `data/`, with every claim `waiting`. An existing database is kept as it is
 - `UNDERCOVER_DB` sets the database file, defaulting to `undercover.db` at the repo root. A pytest fixture gives each test its own temporary file
 - Amounts are `Decimal` in the code, whole cents in the database and JSON numbers in the API
-- The read operations: `list_claims`, `get_claim`, `get_policy`, `get_claim_history`, `get_policy_wording` and `list_handlers`. `get_claim_history` returns the customer's name, customer-since date and previous claims, and leaves out the email, phone, address and date of birth
+- The read operations: `list_claims`, `get_claim`, `get_policy`, `get_claim_history`, `get_policy_wording` and `list_handlers`. `get_claim_history` returns the customer's name, customer-since date and previous claims, and leaves out the email, phone, address and date of birth, which are never loaded into the database
 - An unknown claim id answers 404
 - The coverage threshold in `pyproject.toml` rises from 80% to 95%
 
@@ -86,22 +86,22 @@ The database, the seed loading and the read operations. Everything later reads t
 
 With pytest:
 
-- [ ] With no database file, starting the backend creates one and loads 25 claims, all `waiting`
-- [ ] Starting it again on the same file keeps the existing data and doesn't load the seed a second time
-- [ ] With `UNDERCOVER_DB` set to a temporary path, the database is created there and not at the repo root
-- [ ] `GET /api/claims` returns 25 claims in the order of `data/claims.json`, starting with CLM-1001, each with its id, type, summary, amount claimed and status
-- [ ] In that response, CLM-1001 has `"amount_claimed": 420.0`, a JSON number, not a string
-- [ ] `GET /api/claims/CLM-1001` returns the story, items and documents, with no decision, payment or steps yet
-- [ ] `GET /api/claims/CLM-1001/policy` returns POL-2001 on the Premium plan with its limits (such as `baggage_max` 1500.00) and its add-ons
-- [ ] `GET /api/claims/CLM-1001/history` returns customer CUS-3001, Maya Patel, with her previous claim CLM-0412, and the response has no `email`, `phone`, `address` or `date_of_birth`
-- [ ] `GET /api/policy-wording` returns the wording, starting "# UnderCover Travel Insurance: Policy Wording"
-- [ ] `GET /api/handlers` returns the three handlers
-- [ ] `GET /api/claims/CLM-9999` answers 404
+- [x] With no database file, starting the backend creates one and loads 25 claims, all `waiting`
+- [x] Starting it again on the same file keeps the existing data and doesn't load the seed a second time
+- [x] With `UNDERCOVER_DB` set to a temporary path, the database is created there, and no `undercover.db` appears at the repo root after the tests run
+- [x] `GET /api/claims` returns 25 claims in the order of `data/claims.json`, starting with CLM-1001, each with its id, type, summary, amount claimed and status
+- [x] In that response, CLM-1001 has `"amount_claimed": 420.0`, a JSON number, not a string
+- [x] `GET /api/claims/CLM-1001` returns the story, items and documents, with no decision, payment or steps yet
+- [x] `GET /api/claims/CLM-1001/policy` returns POL-2001 on the Premium plan with its limits (such as `baggage_max` 1500.00) and its add-ons
+- [x] `GET /api/claims/CLM-1001/history` returns customer CUS-3001, Maya Patel, with her previous claim CLM-0412, and the response has no `email`, `phone`, `address` or `date_of_birth`
+- [x] `GET /api/policy-wording` returns the wording, starting "# UnderCover Travel Insurance: Policy Wording"
+- [x] `GET /api/handlers` returns the three handlers
+- [x] `GET /api/claims/CLM-9999` answers 404
 
 Commands:
 
-- [ ] A search of `backend/` finds no reference to `data/evals/`, `data/security/` or `data/claims_manual.md`
-- [ ] `npm run check:python` passes at the 95% coverage threshold
+- [x] A search of `backend/` finds no reference to `data/evals/`, `data/security/` or `data/claims_manual.md`
+- [x] `npm run check:python` passes at the 95% coverage threshold
 
 ## Phase 2: decisions, payments and sign-off
 
