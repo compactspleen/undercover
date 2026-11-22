@@ -1,0 +1,421 @@
+/* UnderCover's brand, from docs/BRAND.md: a 1960s airline ticket office. */
+
+:root {
+  --sky: #0a5cb8;
+  --gold: #f2b705;
+  --horizon: #6fa8dc;
+  --steel: #5b7083;
+  --signal-red: #c8102e;
+  --navy: #0b1f3a;
+  --pale-blue: #e6eef8;
+  --white: #ffffff;
+
+  --page: #f4f7fb;
+  --panel: var(--white);
+  --outline: #d6dee8;
+  --ink: var(--navy);
+  --muted: var(--steel);
+  --link: var(--sky);
+
+  --sans: "Libre Franklin", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  color-scheme: light;
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--page);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #071426;
+    --panel: var(--navy);
+    --outline: #1e3457;
+    --ink: var(--pale-blue);
+    --muted: color-mix(in srgb, var(--pale-blue) 70%, var(--navy));
+    /* Sky Blue is too dark for text on dark backgrounds. */
+    --link: var(--horizon);
+
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+a {
+  color: var(--link);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: 1.9rem;
+  font-weight: 900;
+}
+
+h2,
+h3,
+th,
+dt,
+.eyebrow,
+.tagline,
+.nav a,
+.label,
+button {
+  font-family: var(--sans);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+h2 {
+  margin-bottom: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+h3 {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+p {
+  margin: 0;
+}
+
+.mono,
+code,
+pre {
+  font-family: var(--mono);
+  font-size: 0.92em;
+}
+
+/* The header band */
+
+.band {
+  background: var(--sky);
+  color: var(--white);
+}
+
+.band-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.5rem;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+}
+
+.wordmark {
+  color: var(--white);
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.tagline {
+  color: var(--pale-blue);
+  font-size: 0.72rem;
+}
+
+.nav {
+  display: flex;
+  gap: 1.5rem;
+  margin-left: auto;
+}
+
+.nav a {
+  color: var(--white);
+  font-size: 0.78rem;
+}
+
+/* Layout */
+
+.page {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.stack-tight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 56rem) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.panel {
+  padding: 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--outline);
+  border-radius: 6px;
+}
+
+/* The queue */
+
+.counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.count-number {
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+tbody tr + tr td,
+tfoot td,
+tfoot th {
+  border-top: 1px solid var(--outline);
+}
+
+.number {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Labels: small rectangles with bold capitals */
+
+.label {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.66rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.label-in_progress,
+.label-approve {
+  background: var(--sky);
+  color: var(--white);
+}
+
+.label-waiting_for_sign_off,
+.label-refer {
+  background: var(--gold);
+  color: var(--navy);
+}
+
+.label-decided {
+  background: var(--horizon);
+  color: var(--navy);
+}
+
+.label-waiting,
+.label-decline {
+  background: var(--steel);
+  color: var(--white);
+}
+
+.label-alert {
+  background: var(--signal-red);
+  color: var(--white);
+}
+
+/* A claim */
+
+.claim-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.claim-heading h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.lead {
+  font-size: 1.1rem;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.prose {
+  max-width: 65ch;
+}
+
+.documents {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.document-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.decision-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.payout {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.section-name {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: minmax(8rem, auto) minmax(0, 1fr);
+  gap: 0.4rem 1rem;
+  margin: 0;
+}
+
+.facts dt {
+  grid-column: 1;
+  font-size: 0.68rem;
+  color: var(--muted);
+  padding-top: 0.15rem;
+}
+
+.facts dd {
+  grid-column: 2;
+  margin: 0;
+}
+
+.fact {
+  display: contents;
+}
+
+.add-on-name {
+  font-weight: 700;
+}
+
+.note {
+  color: var(--muted);
+}
+
+.note-alert {
+  color: var(--signal-red);
+  font-weight: 600;
+}
+
+button {
+  padding: 0.55rem 1rem;
+  border: 0;
+  border-radius: 4px;
+  background: var(--sky);
+  color: var(--white);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--outline);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+}

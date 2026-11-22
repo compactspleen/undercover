@@ -196,7 +196,7 @@ The handlers' main screens, in the brand in `docs/BRAND.md`. Everything else in 
 - The header band shows UnderCover and links to the queue and the instructions
 - The queue page lists every claim in order, with its id, type, summary, amount claimed and a status label for waiting, in progress, waiting for sign-off or decided, and a count of each status above the list
 - The claim page shows the story, the items with amounts, the documents, the policy and plan, and the decision with its explanation, policy section and payout, or "No decision yet". An approved claim within the limit with no payment shows "Approved, not paid"
-- Each page has its address in the hash: no hash is the queue and `#CLM-1001` is that claim. The page follows the hash, so a refresh, the back button and a shared link land on the same page
+- Each page has its address in the hash: no hash is the queue (as is `#queue`, which the header links to) and `#CLM-1001` is that claim. The page follows the hash, so a refresh, the back button and a shared link land on the same page
 - Amounts are formatted as US dollars, such as $1,250.00
 - The coverage threshold in `dashboard/vite.config.ts` rises from 80% to 95%
 
@@ -204,23 +204,23 @@ The handlers' main screens, in the brand in `docs/BRAND.md`. Everything else in 
 
 With vitest, with `fetch` stubbed:
 
-- [ ] The queue shows all 25 claims in order, each with its id, type, summary, amount claimed and status label
-- [ ] The counts above the queue match the claims' statuses
-- [ ] Choosing a claim opens it in full: the story, the items with amounts, the documents, and the policy and plan
-- [ ] An `approve`, a `decline` and a `refer` each show their explanation and policy section, an approval shows its payout, and a claim with no decision shows "No decision yet"
-- [ ] An approved claim within the limit with no payment shows "Approved, not paid"
-- [ ] The hash `#CLM-1001` opens that claim, and no hash shows the queue
-- [ ] Amounts show as US dollars, such as $1,250.00
+- [x] The queue shows all 25 claims in order, each with its id, type, summary, amount claimed and status label
+- [x] The counts above the queue match the claims' statuses
+- [x] Choosing a claim opens it in full: the story, the items with amounts, the documents, and the policy and plan
+- [x] An `approve`, a `decline` and a `refer` each show their explanation and policy section, an approval shows its payout, and a claim with no decision shows "No decision yet"
+- [x] An approved claim within the limit with no payment shows "Approved, not paid"
+- [x] The hash `#CLM-1001` opens that claim, and no hash shows the queue
+- [x] Amounts show as US dollars, such as $1,250.00
 
 In the browser, with the Playwright MCP server:
 
-- [ ] The header band shows UnderCover and links to the queue and the instructions
-- [ ] The queue and CLM-1001 render in the brand in light and dark mode, with no console errors
-- [ ] Opening `#CLM-1001` directly, refreshing it, and pressing back to the queue each land on the right page
+- [x] The header band shows UnderCover and links to the queue and the instructions
+- [x] The queue and CLM-1001 render in the brand in light and dark mode, with no console errors
+- [x] Opening `#CLM-1001` directly, refreshing it, and pressing back to the queue each land on the right page
 
 Commands:
 
-- [ ] `npm run check:ts` passes at the 95% coverage threshold
+- [x] `npm run check:ts` passes at the 95% coverage threshold
 
 ## Phase 5: the agent's steps, its instructions and sign-off
 
