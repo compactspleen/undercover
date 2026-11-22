@@ -34,9 +34,3 @@ def not_found(request: Request, error: NotFound) -> JSONResponse:
 def conflict(request: Request, error: Conflict) -> JSONResponse:
     """Answer 409 with the reason."""
     return JSONResponse({"detail": str(error)}, status_code=409)
-
-
-@app.get("/api/health", operation_id="health")
-def health() -> dict[str, str]:
-    """Check that the backend is running."""
-    return {"status": "ok"}

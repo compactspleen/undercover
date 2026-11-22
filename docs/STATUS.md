@@ -8,6 +8,7 @@ The pilot in `docs/PLAN.md` is built: the backend, the UnderCover Agent and the 
   - reads: the queue, a claim, its policy, the customer's claim history (without contact details or date of birth), the policy wording, the agent's instructions and the handlers
   - writes: starting a claim, recording a step, recording a decision, paying a claim and a handler's sign-off
   - the rules: a decision only on a claim in progress and only once, and no payment over $1,000 until a handler signs off, which releases it
+  - `GET /api/health`: checks that the backend can read its database, the policy wording and the agent's instructions. It answers 200 when all three pass, or 503 naming the check that failed
 - `backend/instructions.md`: the agent's instructions, which the agent fetches at the start of each run and the dashboard shows read only
 - `agent/`: the UnderCover Agent. `run(claim_id, thread_id)` starts the claim and works it with six tools that call the backend: `get_claim`, `get_policy`, `get_claim_history`, `get_policy_wording`, `record_decision` and `pay_claim`. It posts each step to the backend as it goes. A run fails if it ends without a decision, or approves a claim within the limit without paying it
 - `dashboard/`: the handlers' screens in the brand in `docs/BRAND.md`, in light and dark mode:

@@ -223,3 +223,17 @@ class Handler(BaseModel):
 
 class Company(BaseModel):
     payout_approval_limit: Money
+
+
+class Check(StrEnum):
+    OK = "ok"
+    FAILED = "failed"
+
+
+class Health(BaseModel):
+    """Whether the backend can serve requests, and which check failed if not."""
+
+    status: Check
+    database: Check
+    policy_wording: Check
+    instructions: Check

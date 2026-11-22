@@ -6,17 +6,19 @@ from contextlib import closing
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import PlainTextResponse
 
 from backend import actions, records
 from backend.database import connect
 from backend.models import (
+    Check,
     Claim,
     ClaimHistory,
     ClaimSummary,
     Decision,
     Handler,
+    Health,
     NewStep,
     Payment,
     PaymentRequest,
@@ -42,6 +44,39 @@ def open_database(request: Request) -> Iterator[sqlite3.Connection]:
 
 
 Database = Annotated[sqlite3.Connection, Depends(open_database)]
+
+
+def check_database(path: Path) -> Check:
+    """Read the claims table read-only, so the check can't create an empty file."""
+    try:
+        with closing(
+            sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+        ) as connection:
+            connection.execute("SELECT 1 FROM claims LIMIT 1")
+    except sqlite3.Error:
+        return Check.FAILED
+    return Check.OK
+
+
+def check_file(path: Path) -> Check:
+    return Check.OK if path.is_file() else Check.FAILED
+
+
+@router.get(
+    "/health",
+    operation_id="health",
+    responses={503: {"model": Health, "description": "A check failed"}},
+)
+def health(request: Request, response: Response) -> Health:
+    """Check that the backend can read its database and documents."""
+    checks = {
+        "database": check_database(request.app.state.database_path),
+        "policy_wording": check_file(POLICY_WORDING),
+        "instructions": check_file(INSTRUCTIONS),
+    }
+    is_healthy = all(check is Check.OK for check in checks.values())
+    response.status_code = 200 if is_healthy else 503
+    return Health(status=Check.OK if is_healthy else Check.FAILED, **checks)
 
 
 @router.get("/claims", operation_id="list_claims")
