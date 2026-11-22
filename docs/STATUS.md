@@ -12,7 +12,7 @@ The pilot in `docs/PLAN.md` is built: the backend, the UnderCover Agent and the 
 - `backend/instructions.md`: the agent's instructions, which the agent fetches at the start of each run and the dashboard shows read only
 - `agent/`: the UnderCover Agent. `run(claim_id, thread_id)` starts the claim and works it with six tools that call the backend: `get_claim`, `get_policy`, `get_claim_history`, `get_policy_wording`, `record_decision` and `pay_claim`. It posts each step to the backend as it goes. A run fails if it ends without a decision, or approves a claim within the limit without paying it
 - `dashboard/`: the handlers' screens in the brand in `docs/BRAND.md`, in light and dark mode:
-  - the queue, with each claim's status and a count of each status
+  - the queue, with each claim's status, its decision and the payout an approval set beside the amount claimed, and a count of each status
   - a claim's page, at an address such as `#CLM-1001`: the story, items, documents, policy and plan, the decision, the payment and the agent's steps, refreshed every two seconds. It flags "Approved, not paid" for an approval within the limit that wasn't paid, and has a sign-off control for a payout waiting for sign-off
   - the agent's instructions, read only, at `#instructions`
 - `e2e/`: Playwright tests of the queue, a claim's decision and steps, the instructions and a sign-off in the browser

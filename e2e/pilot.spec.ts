@@ -53,6 +53,16 @@ test("a claim shows its decision and steps", async ({ page, request }) => {
   await expect(steps.getByText("Approved and paid $420.00.")).toBeVisible();
 });
 
+test("the queue shows each claim's decision and payout", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("row", { name: /^CLM-1001/ })).toHaveText(
+    /Decided\s*Approved\s*\$420\.00\s*\$420\.00$/,
+  );
+  await expect(page.getByRole("row", { name: /^CLM-1002/ })).toHaveText(
+    /Waiting\s*\$[\d,.]+$/,
+  );
+});
+
 test("the instructions page shows the instructions", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Instructions" }).click();

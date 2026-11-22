@@ -22,6 +22,7 @@ export const QUEUE: ClaimSummary[] = Array.from({ length: 25 }, (_, index) => ({
     index === 0 ? "Flight home canceled" : `Claim number ${String(index)}`,
   amount_claimed: index === 0 ? 420 : 1250,
   status: STATUSES[index % STATUSES.length] ?? "waiting",
+  decision: null,
 }));
 
 export const CLAIM: Claim = {

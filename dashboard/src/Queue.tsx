@@ -1,7 +1,7 @@
 import type { ClaimStatus, ClaimSummary } from "./api";
 import { getJson } from "./api";
 import { formatClaimType, formatMoney } from "./format";
-import { Show, StatusLabel } from "./Show";
+import { DecisionLabel, Show, StatusLabel } from "./Show";
 import { useLoaded } from "./useLoaded";
 
 const STATUSES: ClaimStatus[] = [
@@ -41,27 +41,40 @@ function QueueTable({ claims }: Readonly<{ claims: ClaimSummary[] }>) {
               <th scope="col">Claim</th>
               <th scope="col">Type</th>
               <th scope="col">Summary</th>
+              <th scope="col">Status</th>
+              <th scope="col">Decision</th>
               <th scope="col" className="number">
                 Claimed
               </th>
-              <th scope="col">Status</th>
+              <th scope="col" className="number">
+                Payout
+              </th>
             </tr>
           </thead>
           <tbody>
             {claims.map((claim) => (
               <tr key={claim.claim_id}>
                 <td>
-                  <a className="mono" href={`#${claim.claim_id}`}>
+                  <a className="mono identifier" href={`#${claim.claim_id}`}>
                     {claim.claim_id}
                   </a>
                 </td>
                 <td>{formatClaimType(claim.claim_type)}</td>
                 <td>{claim.summary}</td>
+                <td>
+                  <StatusLabel status={claim.status} />
+                </td>
+                <td>
+                  {claim.decision && (
+                    <DecisionLabel decision={claim.decision.decision} />
+                  )}
+                </td>
                 <td className="number mono">
                   {formatMoney(claim.amount_claimed)}
                 </td>
-                <td>
-                  <StatusLabel status={claim.status} />
+                <td className="number mono">
+                  {claim.decision?.decision === "approve" &&
+                    formatMoney(claim.decision.payout)}
                 </td>
               </tr>
             ))}

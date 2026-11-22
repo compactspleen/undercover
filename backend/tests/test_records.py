@@ -39,6 +39,7 @@ def test_the_queue_is_in_order_with_each_claims_summary(client: TestClient):
         "summary": "Flight home canceled by the airline, rebooked the next morning",
         "amount_claimed": 420.0,
         "status": "waiting",
+        "decision": None,
     }
     assert [claim["claim_id"] for claim in claims][:3] == [
         "CLM-1001",

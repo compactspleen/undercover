@@ -157,6 +157,18 @@ def test_a_decline_or_referral_decides_the_claim(client: TestClient, decision: s
     assert client.get("/api/claims/CLM-1001").json()["decision"] == rejection(decision)
 
 
+def test_the_queue_shows_each_claims_decision_and_payout(client: TestClient):
+    start(client)
+    assert decide(client, approve(420.0)).body["decision"] == approve(420.0)
+    start(client, "CLM-1002")
+    decide(client, rejection("decline"), "CLM-1002")
+    queue = client.get("/api/claims").json()
+    decisions = {claim["claim_id"]: claim["decision"] for claim in queue}
+    assert decisions["CLM-1001"] == approve(420.0)
+    assert decisions["CLM-1002"] == rejection("decline")
+    assert decisions["CLM-1003"] is None
+
+
 def test_a_decline_with_a_payout_is_rejected(client: TestClient):
     start(client)
     response = decide(client, rejection("decline") | {"payout": 100.0})

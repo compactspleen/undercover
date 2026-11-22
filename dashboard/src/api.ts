@@ -9,6 +9,7 @@ export interface ClaimSummary {
   summary: string;
   amount_claimed: number;
   status: ClaimStatus;
+  decision: Decision | null;
 }
 
 export interface Item {
@@ -66,7 +67,6 @@ export interface Claim extends ClaimSummary {
   story: string;
   items: Item[];
   documents: ClaimDocument[];
-  decision: Decision | null;
   payment: Payment | null;
   sign_off: SignOff | null;
   steps: Step[];

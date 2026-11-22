@@ -36,14 +36,6 @@ class Document(BaseModel):
     content: str
 
 
-class ClaimSummary(BaseModel):
-    claim_id: str
-    claim_type: str
-    summary: str
-    amount_claimed: Money
-    status: ClaimStatus
-
-
 class SubmittedClaim(BaseModel):
     """A claim as the customer submitted it."""
 
@@ -96,6 +88,15 @@ class Refer(BaseModel, extra="forbid"):
 
 
 Decision = Annotated[Approve | Decline | Refer, Field(discriminator="decision")]
+
+
+class ClaimSummary(BaseModel):
+    claim_id: str
+    claim_type: str
+    summary: str
+    amount_claimed: Money
+    status: ClaimStatus
+    decision: Decision | None
 
 
 class NewStep(BaseModel, extra="forbid"):

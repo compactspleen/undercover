@@ -29,14 +29,17 @@ def claim_row(connection: sqlite3.Connection, claim_id: str) -> dict[str, object
 
 
 def find_summary(connection: sqlite3.Connection, claim_id: str) -> ClaimSummary:
-    """Return the claim's summary and status."""
-    return ClaimSummary.model_validate(claim_row(connection, claim_id))
+    """Return the claim's summary, status and decision."""
+    return ClaimSummary.model_validate(
+        claim_row(connection, claim_id)
+        | {"decision": decision_row(connection, claim_id)}
+    )
 
 
 def list_claims(connection: sqlite3.Connection) -> list[ClaimSummary]:
     """Return the queue in order."""
-    rows = connection.execute("SELECT * FROM claims ORDER BY rowid").fetchall()
-    return [ClaimSummary.model_validate(row) for row in rows]
+    rows = connection.execute("SELECT claim_id FROM claims ORDER BY rowid").fetchall()
+    return [find_summary(connection, row["claim_id"]) for row in rows]
 
 
 def find_claim(connection: sqlite3.Connection, claim_id: str) -> Claim:

@@ -254,6 +254,10 @@ tfoot th {
   font-variant-numeric: tabular-nums;
 }
 
+.identifier {
+  white-space: nowrap;
+}
+
 /* Labels: small rectangles with bold capitals */
 
 .label {
