@@ -1,14 +1,22 @@
-"""Loading UnderCover's records from `data/` into a new database.
+"""Building the database from UnderCover's records in `data/`.
 
 Only the files named below are read. Nothing else in `data/` may reach the
 database, because the agent must never see the handlers' own decisions.
+
+`uv run -m backend.seed` rebuilds the database, putting every claim back in
+the queue. It shows where the claims stand and asks before it replaces
+anything, and keeps a backup of the database it replaces.
 """
 
+import shutil
 import sqlite3
+import sys
+from contextlib import closing
 from pathlib import Path
 
 from pydantic import TypeAdapter
 
+from backend import database
 from backend.models import (
     ClaimHistory,
     ClaimStatus,
@@ -20,6 +28,13 @@ from backend.models import (
 )
 
 DATA = Path(__file__).parent.parent / "data"
+CONFIRMATION = "yes"
+STATUS_WORDS = {
+    ClaimStatus.WAITING: "waiting",
+    ClaimStatus.IN_PROGRESS: "in progress",
+    ClaimStatus.WAITING_FOR_SIGN_OFF: "waiting for sign-off",
+    ClaimStatus.DECIDED: "decided",
+}
 
 
 def read(name: str) -> str:
@@ -148,3 +163,81 @@ def load_claims(connection: sqlite3.Connection, claims: list[SubmittedClaim]) ->
             for document in claim.documents
         ],
     )
+
+
+def build(path: Path) -> None:
+    """Write a new database from the seed data, then swap it in at the path."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    draft = path.with_name(f"{path.name}.draft")
+    draft.unlink(missing_ok=True)
+    with closing(database.connect(draft)) as connection:
+        connection.executescript(database.SCHEMA)
+        with connection:
+            connection.execute("BEGIN")
+            load(connection)
+    draft.replace(path)
+
+
+def prepare(path: Path) -> None:
+    """Create the database from the seed data, unless it exists already."""
+    if not path.exists():
+        build(path)
+
+
+def backup_path(path: Path) -> Path:
+    """Name the backup so it ends like the database, which git ignores."""
+    return path.with_name(f"{path.stem}.backup{path.suffix}")
+
+
+def describe(path: Path) -> str:
+    """Say where the claims in an existing database stand."""
+    try:
+        with closing(database.connect(path)) as connection:
+            rows = connection.execute(
+                "SELECT status, count(*) AS claims FROM claims GROUP BY status"
+            ).fetchall()
+    except sqlite3.Error:
+        return f"{path} can't be read."
+    counts = {row["status"]: row["claims"] for row in rows}
+    return f"{path} has " + ", ".join(
+        f"{counts.get(status, 0)} {words}" for status, words in STATUS_WORDS.items()
+    )
+
+
+def is_confirmed(path: Path) -> bool:
+    """Show what a rebuild would lose, and ask before going ahead."""
+    print(describe(path))
+    print(
+        "Rebuilding replaces it with a fresh copy of data/. Every decision, "
+        "payment, sign-off and step in it is lost, and every claim goes back "
+        "to waiting."
+    )
+    reply = input(f"Type {CONFIRMATION} to rebuild it: ")
+    return reply.strip().lower() == CONFIRMATION
+
+
+def rebuild(path: Path) -> Path:
+    """Back up the database, then replace it with a fresh one. Return the backup."""
+    backup = backup_path(path)
+    shutil.copyfile(path, backup)
+    build(path)
+    return backup
+
+
+def main() -> int:
+    """Rebuild the database from data/, asking first if one exists."""
+    path = database.path_from_environment()
+    if not path.exists():
+        build(path)
+        print(f"Created {path} from data/, with every claim waiting")
+        return 0
+    if not is_confirmed(path):
+        print("Nothing changed")
+        return 1
+    backup = rebuild(path)
+    print(f"Rebuilt {path} with every claim waiting. The old one is in {backup}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

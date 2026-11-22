@@ -1,13 +1,10 @@
-"""The SQLite database: its tables, and creating it from the seed data."""
+"""The SQLite database: its tables, and how to open it."""
 
 import os
 import sqlite3
-from contextlib import closing
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
-
-from backend import seed
 
 DEFAULT_PATH = Path(__file__).parent.parent / "undercover.db"
 
@@ -152,18 +149,3 @@ def connect(path: Path) -> sqlite3.Connection:
     )
     connection.row_factory = as_dict
     return connection
-
-
-def prepare(path: Path) -> None:
-    """Create the database from the seed data, unless it exists already."""
-    if path.exists():
-        return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    draft = path.with_name(f"{path.name}.draft")
-    draft.unlink(missing_ok=True)
-    with closing(connect(draft)) as connection:
-        connection.executescript(SCHEMA)
-        with connection:
-            connection.execute("BEGIN")
-            seed.load(connection)
-    draft.replace(path)

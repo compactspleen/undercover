@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from backend import database
+from backend import database, seed
 from backend.actions import Conflict
 from backend.records import NotFound
 from backend.routes import router
@@ -16,7 +16,7 @@ from backend.routes import router
 async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Create the database on first start."""
     app.state.database_path = database.path_from_environment()
-    database.prepare(app.state.database_path)
+    seed.prepare(app.state.database_path)
     yield
 
 

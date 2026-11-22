@@ -28,4 +28,6 @@ The agent prints only each claim's id and outcome, such as `CLM-1001 approve $42
 
 ## The database
 
-The backend keeps its data in `undercover.db` at the repo root, which git ignores. It's created from `data/` the first time the backend starts. To start again from the seed data, stop the backend and delete `undercover.db`. The environment variable `UNDERCOVER_DB` points the backend at another file. Nothing reads `data/evals/`, `data/security/` or the claims manual.
+The backend keeps its data in `undercover.db` at the repo root, which git ignores. It's created from `data/` the first time the backend starts. The environment variable `UNDERCOVER_DB` points the backend at another file.
+
+`uv run -m backend.seed` rebuilds the database from `data/`, putting every claim back in the queue as waiting. It shows where the claims stand and asks you to type `yes` first, because every decision, payment, sign-off and step is lost. It keeps the old database in `undercover.backup.db`, replacing any earlier backup. A running backend picks up the rebuilt database straight away. Nothing reads `data/evals/`, `data/security/` or the claims manual.
