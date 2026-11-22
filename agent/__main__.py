@@ -15,6 +15,36 @@ from agent import backend, main
 from agent.main import Approval, Outcome, RunFailed
 
 BACKEND_DOWN = "Start the backend with npm run dev"
+HEALTHY = "ok"
+WHAT_EACH_CHECK_READS = {
+    "database": "its database",
+    "policy_wording": "the policy wording",
+    "instructions": "the agent's instructions",
+}
+
+
+class BackendUnhealthy(Exception):
+    """The backend is running but can't serve claims."""
+
+
+class Health(BaseModel):
+    database: str
+    policy_wording: str
+    instructions: str
+
+
+def check_backend() -> None:
+    """Raise BackendUnhealthy, naming what the backend can't read, if a check fails."""
+    checks = Health.model_validate_json(backend.health()).model_dump()
+    unreadable = [
+        WHAT_EACH_CHECK_READS[name]
+        for name, result in checks.items()
+        if result != HEALTHY
+    ]
+    if unreadable:
+        raise BackendUnhealthy(
+            f"The backend is running but can't read {' or '.join(unreadable)}"
+        )
 
 
 class QueuedClaim(BaseModel):
@@ -51,11 +81,12 @@ def work(claim_ids: list[str]) -> None:
 def run_command(arguments: list[str]) -> int:
     """Work the claims named, or the waiting queue, and return the exit code."""
     try:
+        check_backend()
         work(arguments or waiting_claims())
     except httpx.ConnectError:
         print(BACKEND_DOWN, file=sys.stderr)
         return 1
-    except RunFailed as failure:
+    except (BackendUnhealthy, RunFailed) as failure:
         print(failure, file=sys.stderr)
         return 1
     return 0

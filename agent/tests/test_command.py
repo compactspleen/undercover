@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage
@@ -5,6 +7,7 @@ from langchain_core.messages import AIMessage
 from agent import backend, main
 from agent.__main__ import run_command as command
 from agent.tests.stub_model import approval, call, referral, stub
+from backend import routes
 
 
 def status(client: TestClient, claim_id: str) -> str:
@@ -101,3 +104,25 @@ def test_without_the_backend(monkeypatch, capsys):
     monkeypatch.setattr(backend, "BACKEND_URL", "http://127.0.0.1:9")
     assert command(["CLM-1001"]) == 1
     assert capsys.readouterr().err == "Start the backend with npm run dev\n"
+
+
+def test_a_backend_that_cant_read_its_database(
+    in_process: TestClient, database: Path, capsys
+):
+    database.write_bytes(b"")
+    assert command(["CLM-1001"]) == 1
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert output.err == "The backend is running but can't read its database\n"
+
+
+def test_a_backend_missing_its_documents(
+    in_process: TestClient, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys
+):
+    monkeypatch.setattr(routes, "POLICY_WORDING", tmp_path / "missing.md")
+    monkeypatch.setattr(routes, "INSTRUCTIONS", tmp_path / "missing.md")
+    assert command([]) == 1
+    assert capsys.readouterr().err == (
+        "The backend is running but can't read the policy wording "
+        "or the agent's instructions\n"
+    )

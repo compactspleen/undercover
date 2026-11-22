@@ -23,6 +23,15 @@ def get(path: str) -> str:
     return response.text
 
 
+def health() -> str:
+    """Read the backend's health report, which comes with a 503 when a check fails."""
+    with client() as backend:
+        response = backend.get("/api/health")
+    if response.status_code != HTTPStatus.SERVICE_UNAVAILABLE:
+        response.raise_for_status()
+    return response.text
+
+
 def post(path: str, body: dict[str, object]) -> str:
     """Write to the backend, raising on any error."""
     with client() as backend:

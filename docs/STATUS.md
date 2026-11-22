@@ -22,7 +22,7 @@ The pilot in `docs/PLAN.md` is built: the backend, the UnderCover Agent and the 
 1. `npm run dev` starts the backend on port 8000 and the dashboard on http://localhost:5173
 2. In another terminal, `uv run -m agent` works every waiting claim in queue order, and `uv run -m agent CLM-1001` works one claim
 
-The agent prints only each claim's id and outcome, such as `CLM-1001 approve $420.00`, and stops at the first claim that fails. It uses `openai/gpt-6-luna` on OpenRouter with the key in `.env`, or the model in `MODEL_NAME`, such as `openrouter/free`. If the backend isn't running, it says "Start the backend with npm run dev".
+The agent prints only each claim's id and outcome, such as `CLM-1001 approve $420.00`, and stops at the first claim that fails. It uses `openai/gpt-6-luna` on OpenRouter with the key in `.env`, or the model in `MODEL_NAME`, such as `openrouter/free`. It checks the backend's health first. If the backend isn't running, it says "Start the backend with npm run dev", and if the backend can't read its database or documents, it says which, such as "The backend is running but can't read its database".
 
 `npm run check` runs every check: ruff, pyright and pytest; Prettier, ESLint, tsc and vitest; and the Playwright tests. The Playwright tests start their own backend on port 8100, with a fresh database in `e2e/test-results/`, and their own dashboard on port 5174, so they can run while `npm run dev` is running.
 
