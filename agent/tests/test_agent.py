@@ -4,10 +4,11 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage
+from langchain_core.rate_limiters import BaseRateLimiter, InMemoryRateLimiter
 
 from agent import backend, main, tools
-from agent.main import RunFailed
-from agent.tests.stub_model import approval, call, referral, stub
+from agent.main import InvalidSetting, RunFailed
+from agent.tests.stub_model import StubModel, approval, call, referral, stub
 
 INSTRUCTIONS = "backend/instructions.md"
 
@@ -143,3 +144,80 @@ def test_model_name(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("MODEL_NAME", "openrouter/free")
     assert main.model().model_name == "openrouter/free"
     assert main.model().reasoning_effort is None
+
+
+def throttle_of(model: main.ChatOpenAI) -> InMemoryRateLimiter:
+    throttle = model.rate_limiter
+    assert isinstance(throttle, InMemoryRateLimiter)
+    return throttle
+
+
+def test_the_model_makes_at_most_20_calls_a_minute_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.delenv("MODEL_REQUESTS_PER_MINUTE", raising=False)
+    throttle = throttle_of(main.model())
+    assert throttle.requests_per_second == 20 / 60
+    assert throttle.max_bucket_size == 1
+
+
+@pytest.mark.parametrize(("setting", "per_minute"), [("30", 30), (" 1 ", 1), ("", 20)])
+def test_model_requests_per_minute_sets_the_rate(
+    monkeypatch: pytest.MonkeyPatch, setting: str, per_minute: int
+):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("MODEL_REQUESTS_PER_MINUTE", setting)
+    throttle = throttle_of(main.model())
+    assert throttle.requests_per_second == per_minute / 60
+    assert throttle.max_bucket_size == 1
+
+
+@pytest.mark.parametrize("setting", ["fast", "0", "-5", "1.5"])
+def test_a_rate_that_isnt_a_whole_number_above_zero_is_refused(
+    monkeypatch: pytest.MonkeyPatch, setting: str
+):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("MODEL_REQUESTS_PER_MINUTE", setting)
+    with pytest.raises(InvalidSetting) as refusal:
+        main.model()
+    assert str(refusal.value) == (
+        f"MODEL_REQUESTS_PER_MINUTE must be a whole number above 0, such as 20, "
+        f"not {setting!r}"
+    )
+
+
+class CountingThrottle(BaseRateLimiter):
+    """A throttle that counts how often the model waits for it, without waiting."""
+
+    def __init__(self) -> None:
+        self.waits = 0
+
+    def acquire(self, *, blocking: bool = True) -> bool:
+        self.waits += 1
+        return True
+
+    async def aacquire(self, *, blocking: bool = True) -> bool:
+        return self.acquire(blocking=blocking)
+
+
+def test_the_agent_waits_for_the_throttle_before_each_model_call(
+    in_process: TestClient,
+):
+    throttle = CountingThrottle()
+    model = StubModel(
+        messages=iter([referral("CLM-1001"), AIMessage(content="Referred.")]),
+        rate_limiter=throttle,
+    )
+    main.run("CLM-1001", "thread-1", model)
+    assert len(model.prompts) == 2
+    assert throttle.waits == 2
+
+
+def test_a_model_that_cant_be_built_leaves_the_claim_waiting(
+    in_process: TestClient, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setenv("MODEL_REQUESTS_PER_MINUTE", "fast")
+    with pytest.raises(InvalidSetting):
+        main.run("CLM-1001", "thread-1")
+    assert status(in_process, "CLM-1001") == "waiting"

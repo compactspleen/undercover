@@ -9,10 +9,11 @@ import sys
 from uuid import uuid4
 
 import httpx
+from langchain_core.exceptions import ModelRateLimitError
 from pydantic import BaseModel, TypeAdapter
 
 from agent import backend, main
-from agent.main import Approval, Outcome, RunFailed
+from agent.main import Approval, InvalidSetting, Outcome, RunFailed
 
 BACKEND_DOWN = "Start the backend with npm run dev"
 HEALTHY = "ok"
@@ -25,6 +26,17 @@ WHAT_EACH_CHECK_READS = {
 
 class BackendUnhealthy(Exception):
     """The backend is running but can't serve claims."""
+
+
+class RateLimited(Exception):
+    """OpenRouter refused the agent's calls to the model, despite the throttle."""
+
+    def __init__(self, claim_id: str) -> None:
+        super().__init__(
+            f"OpenRouter's rate limit stopped the agent while working {claim_id}.\n"
+            "Wait, or lower MODEL_REQUESTS_PER_MINUTE, "
+            f"then run uv run -m agent {claim_id}"
+        )
 
 
 class Health(BaseModel):
@@ -68,10 +80,18 @@ def describe(outcome: Outcome) -> str:
 
 
 def work(claim_ids: list[str]) -> None:
-    """Work each claim in turn, stopping at the first that fails."""
+    """Work each claim in turn, stopping at the first that fails.
+
+    Every claim shares one model, so the model's throttle spaces out every call
+    the run makes, not just the calls for one claim.
+    """
+    llm = main.model()
     for claim_id in claim_ids:
         try:
-            outcome = main.run(claim_id, uuid4().hex)
+            outcome = main.run(claim_id, uuid4().hex, llm)
+        except ModelRateLimitError as error:
+            # The claim stays in progress, which `uv run -m agent` alone skips.
+            raise RateLimited(claim_id) from error
         except Exception as error:
             error.add_note(f"The agent stopped while working {claim_id}")
             raise
@@ -86,7 +106,7 @@ def run_command(arguments: list[str]) -> int:
     except httpx.ConnectError:
         print(BACKEND_DOWN, file=sys.stderr)
         return 1
-    except (BackendUnhealthy, RunFailed) as failure:
+    except (BackendUnhealthy, InvalidSetting, RateLimited, RunFailed) as failure:
         print(failure, file=sys.stderr)
         return 1
     return 0

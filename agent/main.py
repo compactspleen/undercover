@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
+from langchain_core.rate_limiters import InMemoryRateLimiter
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field, SecretStr
 
@@ -21,6 +22,9 @@ load_dotenv(override=True)
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_MODEL = "openai/gpt-6-luna"
+# Our OpenRouter account's limit for now. MODEL_REQUESTS_PER_MINUTE changes it.
+DEFAULT_REQUESTS_PER_MINUTE = 20
+SECONDS_PER_MINUTE = 60
 RESULT_SUMMARY_LENGTH = 200
 
 
@@ -68,22 +72,53 @@ class RunFailed(Exception):
     """The agent finished a claim without completing it."""
 
 
+class InvalidSetting(Exception):
+    """A setting in the environment can't be used."""
+
+
 def model() -> ChatOpenAI:
-    """Return the model named in MODEL_NAME, or GPT-6 Luna by default."""
+    """Return the model named in MODEL_NAME, or GPT-6 Luna by default, throttled."""
+    throttle = InMemoryRateLimiter(
+        requests_per_second=requests_per_minute() / SECONDS_PER_MINUTE,
+        max_bucket_size=1,
+    )
     name = os.getenv("MODEL_NAME")
     return ChatOpenAI(
         model=name or DEFAULT_MODEL,
         base_url=OPENROUTER_BASE_URL,
         api_key=SecretStr(os.environ["OPENROUTER_API_KEY"]),
         reasoning_effort=None if name else "low",
+        rate_limiter=throttle,
     )
+
+
+def requests_per_minute() -> int:
+    """Return the most calls a minute to make to the model.
+
+    The rate is MODEL_REQUESTS_PER_MINUTE when it's set, or 20. The model is
+    then called at most once every 60 / rate seconds, with no bursts, so the
+    agent stays within OpenRouter's limit on requests a minute.
+    """
+    setting = os.getenv("MODEL_REQUESTS_PER_MINUTE")
+    if not setting:
+        return DEFAULT_REQUESTS_PER_MINUTE
+    try:
+        rate = int(setting)
+    except ValueError:
+        rate = 0
+    if rate < 1:
+        raise InvalidSetting(
+            "MODEL_REQUESTS_PER_MINUTE must be a whole number above 0, such as 20, "
+            f"not {setting!r}"
+        )
+    return rate
 
 
 def run(claim_id: str, thread_id: str, llm: BaseChatModel | None = None) -> Outcome:
     """Work one claim, recording each step, and return its outcome."""
     instructions = backend.get("/api/instructions")
-    backend.post(f"/api/claims/{claim_id}/start", {})
     agent = create_agent(llm or model(), tools=TOOLS, system_prompt=instructions)
+    backend.post(f"/api/claims/{claim_id}/start", {})
     updates = agent.stream(
         {"messages": [{"role": "user", "content": f"Work claim {claim_id}."}]},
         config={"configurable": {"thread_id": thread_id}},

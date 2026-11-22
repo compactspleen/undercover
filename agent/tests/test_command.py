@@ -6,7 +6,14 @@ from langchain_core.messages import AIMessage
 
 from agent import backend, main
 from agent.__main__ import run_command as command
-from agent.tests.stub_model import approval, call, referral, stub
+from agent.tests.stub_model import (
+    StubModel,
+    approval,
+    call,
+    referral,
+    refused_after,
+    stub,
+)
 from backend import routes
 
 
@@ -98,6 +105,50 @@ def test_the_output_holds_no_claim_details(in_process: TestClient, monkeypatch, 
     output = capsys.readouterr()
     assert output.out == "CLM-1001 refer\n"
     assert output.err == ""
+
+
+def test_a_run_builds_one_model_so_every_claim_shares_its_throttle(
+    in_process: TestClient, monkeypatch: pytest.MonkeyPatch, capsys
+):
+    model = stub(*refer_each(["CLM-1001", "CLM-1002"]))
+    built: list[StubModel] = []
+
+    def build() -> StubModel:
+        built.append(model)
+        return model
+
+    monkeypatch.setattr(main, "model", build)
+    assert command(["CLM-1001", "CLM-1002"]) == 0
+    assert capsys.readouterr().out == "CLM-1001 refer\nCLM-1002 refer\n"
+    assert len(built) == 1
+
+
+def test_an_invalid_rate_stops_the_command_before_any_claim_starts(
+    in_process: TestClient, monkeypatch: pytest.MonkeyPatch, capsys
+):
+    monkeypatch.setenv("MODEL_REQUESTS_PER_MINUTE", "fast")
+    assert command(["CLM-1001"]) == 1
+    assert capsys.readouterr().err == (
+        "MODEL_REQUESTS_PER_MINUTE must be a whole number above 0, such as 20, "
+        "not 'fast'\n"
+    )
+    assert status(in_process, "CLM-1001") == "waiting"
+
+
+def test_openrouters_rate_limit_names_the_claim_to_run_again(
+    in_process: TestClient, monkeypatch: pytest.MonkeyPatch, capsys
+):
+    model = refused_after(*refer_each(["CLM-1001"]))
+    monkeypatch.setattr(main, "model", lambda: model)
+    assert command([]) == 1
+    output = capsys.readouterr()
+    assert output.out == "CLM-1001 refer\n"
+    assert output.err == (
+        "OpenRouter's rate limit stopped the agent while working CLM-1002.\n"
+        "Wait, or lower MODEL_REQUESTS_PER_MINUTE, then run uv run -m agent CLM-1002\n"
+    )
+    assert status(in_process, "CLM-1002") == "in_progress"
+    assert status(in_process, "CLM-1003") == "waiting"
 
 
 def test_without_the_backend(monkeypatch, capsys):

@@ -1,7 +1,9 @@
 """A chat model that gives scripted replies in place of a real model."""
 
+from collections.abc import Iterator
 from uuid import uuid4
 
+from langchain_core.exceptions import ModelRateLimitError
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatResult
@@ -28,6 +30,16 @@ def call(name: str, **arguments: object) -> AIMessage:
 
 def stub(*replies: AIMessage) -> StubModel:
     return StubModel(messages=iter(replies))
+
+
+def refused_after(*replies: AIMessage) -> StubModel:
+    """A stub that gives these replies, then is refused by OpenRouter's rate limit."""
+
+    def then_refused() -> Iterator[AIMessage]:
+        yield from replies
+        raise ModelRateLimitError("Rate limit exceeded")
+
+    return StubModel(messages=then_refused())
 
 
 def approval(claim_id: str, payout: float) -> AIMessage:
