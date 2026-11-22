@@ -266,14 +266,14 @@ Playwright runs the whole product together, and one real run shows the agent wor
 
 With Playwright end-to-end tests:
 
-- [ ] The queue shows 25 waiting claims
-- [ ] A claim shows its decision and steps
-- [ ] The instructions page shows the instructions
-- [ ] An over-limit claim is signed off in the browser and then shows the payment
+- [x] The queue shows 25 waiting claims
+- [x] A claim shows its decision and steps
+- [x] The instructions page shows the instructions
+- [x] An over-limit claim is signed off in the browser and then shows the payment
 
 Commands:
 
-- [ ] The end-to-end tests pass while `npm run dev` is running, and leave `undercover.db` unchanged
-- [ ] A real run of `uv run -m agent CLM-1001` with the model from `.env` decides the claim, and the dashboard shows its steps and decision. This calls the model once, for a few cents, or for free with `MODEL_NAME=openrouter/free`
-- [ ] Following `docs/STATUS.md` from a fresh database works as written
-- [ ] `npm run check` passes
+- [x] The end-to-end tests pass while `npm run dev` is running, and leave `undercover.db` unchanged
+- [x] A real run of `uv run -m agent CLM-1001` with the model from `.env` decides the claim, and the dashboard shows its steps and decision. This calls the model once, for a few cents, or for free with `MODEL_NAME=openrouter/free`
+- [x] Following `docs/STATUS.md` from a fresh database works as written
+- [x] `npm run check` passes
