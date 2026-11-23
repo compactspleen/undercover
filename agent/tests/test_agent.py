@@ -11,6 +11,7 @@ from agent.main import InvalidSetting, RunFailed
 from agent.tests.stub_model import StubModel, approval, call, referral, stub
 
 INSTRUCTIONS = "backend/instructions.md"
+POLICY_WORDING = "data/policy_wording.md"
 
 
 def status(client: TestClient, claim_id: str) -> str:
@@ -55,6 +56,19 @@ def test_working_a_claim_to_an_approval_and_payment(in_process: TestClient):
     assert steps[0]["text"] == 'get_claim {"claim_id": "CLM-1001"}'
     assert steps[1]["text"].startswith('get_claim: {"claim_id": "CLM-1001"')
     assert steps[-1]["text"] == "Approved and paid $420.00."
+
+
+def test_each_result_is_recorded_in_full(in_process: TestClient):
+    model = stub(
+        call("get_policy_wording"),
+        referral("CLM-1001"),
+        AIMessage(content="Referred."),
+    )
+    main.run("CLM-1001", "thread-1", model)
+    with in_process as client:
+        result = client.get("/api/claims/CLM-1001").json()["steps"][1]
+    with open(POLICY_WORDING, encoding="utf-8") as file:
+        assert result["text"] == f"get_policy_wording: {file.read()}"
 
 
 def test_an_over_limit_payment_waits_for_sign_off(in_process: TestClient):

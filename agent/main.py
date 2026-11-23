@@ -25,7 +25,6 @@ DEFAULT_MODEL = "openai/gpt-6-luna"
 # Our OpenRouter account's limit for now. MODEL_REQUESTS_PER_MINUTE changes it.
 DEFAULT_REQUESTS_PER_MINUTE = 20
 SECONDS_PER_MINUTE = 60
-RESULT_SUMMARY_LENGTH = 200
 
 
 class StepKind(StrEnum):
@@ -144,7 +143,7 @@ def new_messages(
 def steps_for(message: BaseMessage) -> list[dict[str, object]]:
     """Return the steps that show a handler what this message did."""
     if isinstance(message, ToolMessage):
-        return [step(StepKind.TOOL_RESULT, f"{message.name}: {summary(message.text)}")]
+        return [step(StepKind.TOOL_RESULT, f"{message.name}: {message.text}")]
     if isinstance(message, AIMessage) and message.tool_calls:
         return [
             step(StepKind.TOOL_CALL, f"{call['name']} {json.dumps(call['args'])}")
@@ -155,13 +154,6 @@ def steps_for(message: BaseMessage) -> list[dict[str, object]]:
 
 def step(kind: StepKind, text: str) -> dict[str, object]:
     return {"kind": kind, "text": text}
-
-
-def summary(text: str) -> str:
-    """Shorten a tool result to its opening."""
-    if len(text) <= RESULT_SUMMARY_LENGTH:
-        return text
-    return f"{text[:RESULT_SUMMARY_LENGTH]}…"
 
 
 def checked(state: ClaimState) -> Outcome:
