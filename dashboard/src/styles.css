@@ -442,6 +442,52 @@ tfoot th {
   color: var(--link);
 }
 
+/* Opens and closes a result, so it reads as a line of the step, not a button. */
+.disclosure {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.15rem 0;
+  background: none;
+  color: var(--ink);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+}
+
+.disclosure::before {
+  content: "▸" / "";
+  color: var(--link);
+}
+
+.disclosure[aria-expanded="true"]::before {
+  content: "▾" / "";
+}
+
+.result-preview {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-text {
+  max-height: 24rem;
+  margin: 0.4rem 0 0;
+  padding: 0.75rem;
+  overflow: auto;
+  border: 1px solid var(--outline);
+  border-radius: 4px;
+  background: var(--page);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 /* The instructions */
 
 .instructions {

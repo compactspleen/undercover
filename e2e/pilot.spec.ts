@@ -38,6 +38,10 @@ test("a claim shows its decision and steps", async ({ page, request }) => {
     kind: "tool_call",
     text: 'get_claim {"claim_id": "CLM-1001"}',
   });
+  await post(request, "CLM-1001/steps", {
+    kind: "tool_result",
+    text: `get_claim: My flight home was canceled. ${"We waited at the gate. ".repeat(8)}The end of the story.`,
+  });
   await post(request, "CLM-1001/decision", {
     decision: "approve",
     payout: 420,
@@ -59,6 +63,9 @@ test("a claim shows its decision and steps", async ({ page, request }) => {
   const steps = page.getByRole("region", { name: "Agent's steps" });
   await expect(steps.getByRole("listitem")).toHaveCount(2);
   await expect(steps.getByText("Approved and paid $420.00.")).toBeVisible();
+  await expect(steps.getByText("The end of the story.")).toBeHidden();
+  await steps.getByRole("button", { name: /^Result/ }).click();
+  await expect(steps.getByText("The end of the story.")).toBeVisible();
 });
 
 test("a claim's page names its customer", async ({ page }) => {
