@@ -1,4 +1,9 @@
-import { expect, test, type APIRequestContext } from "@playwright/test";
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type Page,
+} from "@playwright/test";
 
 // The tests share one backend and its database, so they run in order.
 test.describe.configure({ mode: "serial" });
@@ -59,6 +64,25 @@ test("a claim shows its decision and steps", async ({ page, request }) => {
 test("a claim's page names its customer", async ({ page }) => {
   await page.goto("/#CLM-1002");
   await expect(page.getByText("Customer Tom Becker")).toBeVisible();
+});
+
+async function panelBox(page: Page, name: string) {
+  const panel = page.getByRole("region", { name });
+  await expect(panel).toBeVisible();
+  const box = await panel.boundingBox();
+  if (!box) throw new Error(`The ${name} panel isn't on the page`);
+  return box;
+}
+
+test("a claim's policy is at the bottom of the left column", async ({
+  page,
+}) => {
+  await page.goto("/#CLM-1002");
+  const story = await panelBox(page, "Story");
+  const documents = await panelBox(page, "Documents");
+  const policy = await panelBox(page, "Policy");
+  expect(policy.x).toBe(story.x);
+  expect(policy.y).toBeGreaterThan(documents.y);
 });
 
 test("the queue shows each claim's decision and payout", async ({ page }) => {

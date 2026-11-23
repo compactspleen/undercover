@@ -34,13 +34,13 @@ export function ClaimPage({ claimId }: Readonly<{ claimId: string }>) {
               <Story claim={value} />
               <Items claim={value} />
               <Documents claim={value} />
+              <Show loaded={policy}>
+                {(found) => <PolicyPanel policy={found} />}
+              </Show>
             </div>
             <div className="stack">
               <Decision claim={value} onSignedOff={reload} />
               <Steps steps={value.steps} />
-              <Show loaded={policy}>
-                {(found) => <PolicyPanel policy={found} />}
-              </Show>
             </div>
           </div>
         </article>
