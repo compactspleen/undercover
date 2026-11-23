@@ -2,11 +2,13 @@
 
 This plan builds the pilot in `docs/SPEC.md`: a backend that holds UnderCover's records and enforces the payment rule, the UnderCover Agent that works the queue, and a dashboard where the handlers watch it and sign off large payouts. It follows `docs/TECH_STACK.md`, `docs/CODE_STANDARDS.md`, `docs/PROCESS.md` and `docs/BRAND.md`.
 
+**Where it stands.** The pilot is built and every phase's checks are ticked. Twelve changes since, each committed on its own with its tests, are in "Since the pilot" at the end. The approach and the API below describe the product as it stands now, those changes included. The phases are the record of the pilot as it was planned, built and checked.
+
 ## The approach
 
 **The backend is the source of truth and the enforcer.** The agent can decide, but it can only act through the backend's API, and the backend checks every rule. The $1,000 sign-off rule lives in the payment operation itself: if the agent tries to pay an over-limit claim before a handler signs off, the backend refuses. No prompt can talk its way past that.
 
-**Records.** On first start, the backend creates a SQLite database (`undercover.db` at the repo root, ignored by git) and loads it from `data/`: claims, policies, customers, plans, handlers and company settings. The policy wording is read from `data/policy_wording.md`. Nothing reads `data/evals/`, `data/security/` or the claims manual. The environment variable `UNDERCOVER_DB` points the backend at another file, which the tests and the end-to-end run use so they never touch your working database. To start again from the seed data, delete `undercover.db`.
+**Records.** On first start, the backend creates a SQLite database (`undercover.db` at the repo root, ignored by git) and loads it from `data/`: claims, policies, customers, plans, handlers and company settings. The policy wording is read from `data/policy_wording.md`. Nothing reads `data/evals/`, `data/security/` or the claims manual. The environment variable `UNDERCOVER_DB` points the backend at another file, which the tests and the end-to-end run use so they never touch your working database. To start again from the seed data, `uv run -m backend.seed` rebuilds the database with every claim waiting. It shows where the claims stand and asks for `yes` first, keeps the old database in `undercover.backup.db`, and swaps the new one in atomically.
 
 **A claim's status** is one of four values, an enum: `waiting`, `in_progress`, `waiting_for_sign_off` and `decided`. Every claim in `data/claims.json` starts as `waiting`.
 
@@ -30,11 +32,17 @@ A decision can only be recorded on a claim that's in progress, and only once. Re
 
 **When to refer.** The spec says the claims manual explains referrals, and the manual is out of scope for the pilot. So the instructions say when to refer using the wording alone: when a document the wording asks for is missing, when the documents contradict the story or each other, or when the wording doesn't settle the claim.
 
-**What the agent is doing.** `run(claim_id, thread_id)` streams the agent's progress and posts each step to the backend as it happens: each tool it calls, a short summary of each result and its final reply. The dashboard polls the claim every two seconds while its page is open, so the handlers watch the steps appear, including the payment and final reply that come after the decision.
+**What the agent is doing.** `run(claim_id, thread_id)` streams the agent's progress and posts each step to the backend as it happens: each tool it calls, each tool's result in full and its final reply. The dashboard polls the claim every two seconds while its page is open, so the handlers watch the steps appear, including the payment and final reply that come after the decision. The queue polls every two seconds too, so it follows the agent as it starts and decides claims.
+
+**Pairing a call with its result.** The claim's page shows each tool call with its result under it, and a disclosure button opens the result in full. Steps carry no link between a call and its result, and results arrive in the order the tools finish, not the order of the calls. So the page gives each result to the latest earlier call to the same tool that has no result yet, which also pairs a rerun's result with the rerun's call rather than with a call that a stopped run left unanswered. The one case it gets wrong is two calls to the same tool in one turn whose results finish in the same order as the calls: the two results then show under each other's calls. Exact pairing would need a call id stored with each step.
 
 The steps hold tool results, which can include a claimant's medical details. They are product data for the handlers, who see the full claim anyway, and they never go to the console or a log.
 
-**The command line.** `uv run -m agent` works every waiting claim in queue order; `uv run -m agent CLM-1001` works one claim. It needs the backend running (`npm run dev`); if the backend isn't up, it says "Start the backend with npm run dev" rather than showing a connection error. Each run gets a fresh thread id. It prints only each claim's id and its outcome, such as `CLM-1001 approve $420.00`. If a run ends without a decision, or approves within the limit without paying, the command fails with that message and the claim stays as it is; starting an in-progress claim again is allowed. Working the whole queue stops at the first failure and names the claim, following the fail-fast rule.
+**The command line.** `uv run -m agent` works every waiting claim in queue order; `uv run -m agent CLM-1001` works one claim. It needs the backend running (`npm run dev`), and it checks `GET /api/health` before it calls the model. If the backend isn't up, it says "Start the backend with npm run dev" rather than showing a connection error. If the backend can't read its database or documents, it says which, such as "The backend is running but can't read its database". Each run gets a fresh thread id. It prints only each claim's id and its outcome, such as `CLM-1001 approve $420.00`. If a run ends without a decision, or approves within the limit without paying, the command fails with that message and the claim stays as it is; starting an in-progress claim again is allowed. Working the whole queue stops at the first failure and names the claim, following the fail-fast rule.
+
+**The model's rate.** The agent calls the model at most 20 times a minute, evenly spaced, which is our OpenRouter account's limit for now. `MODEL_REQUESTS_PER_MINUTE` changes the rate, and a value that isn't a whole number above 0 stops the command before any claim starts. Every claim in a run shares one model, so the throttle spaces the whole run's calls. If OpenRouter's rate limit refuses a call anyway, the command names the claim it was working, which stays in progress, so it can be run again by name.
+
+**The backend's log.** `npm run dev` starts the backend with `backend/log_config.json`, which starts each log line with the time in UTC, such as `2026-11-22T21:10:47.184Z`.
 
 **The dashboard's addresses.** There's no router, so each page has an address in the URL's hash, such as `#CLM-1001` for a claim and `#instructions` for the instructions. A refresh, the back button and a shared link all land on the same page.
 
@@ -48,8 +56,8 @@ Every operation has an `operation_id`, a one-line docstring and no optional inpu
 
 | Operation | Route | What it does |
 |---|---|---|
-| `health` | `GET /api/health` | Already built |
-| `list_claims` | `GET /api/claims` | The queue in order, with each claim's status |
+| `health` | `GET /api/health` | Checks that the backend can read its database, the policy wording and the instructions: 200 when all three pass, or 503 naming the check that failed |
+| `list_claims` | `GET /api/claims` | The queue in order, with each claim's customer, status and decision |
 | `get_claim` | `GET /api/claims/{claim_id}` | The claim in full, with its decision, payment, sign-off and steps |
 | `get_policy` | `GET /api/claims/{claim_id}/policy` | The claim's policy, with its plan's limits and add-ons |
 | `get_claim_history` | `GET /api/claims/{claim_id}/history` | The customer's name, customer-since date and previous claims |
@@ -67,6 +75,8 @@ An unknown claim or handler answers 404. A request in the wrong state answers 40
 ## The phases
 
 Each phase says what it builds, then lists the tests and checks that show it works. The tests are written first, as `docs/PROCESS.md` asks, and they're the boxes that get ticked.
+
+The phases are the pilot as it was planned, built and checked on 2026-11-22. Where a later change replaced part of a phase, such as Phase 3's summary of each tool result, "Since the pilot" says which.
 
 ## Phase 1: the records in the backend
 
@@ -276,4 +286,116 @@ Commands:
 - [x] The end-to-end tests pass while `npm run dev` is running, and leave `undercover.db` unchanged
 - [x] A real run of `uv run -m agent CLM-1001` with the model from `.env` decides the claim, and the dashboard shows its steps and decision. This calls the model once, for a few cents, or for free with `MODEL_NAME=openrouter/free`
 - [x] Following `docs/STATUS.md` from a fresh database works as written
+- [x] `npm run check` passes
+
+## Since the pilot
+
+Each change was made after the pilot, outside a plan, and committed on its own once its tests passed. They're grouped by the part of the product they change, with the commit for each. One more commit, dba608b, changed only the type annotations on the backend's context managers.
+
+### The backend
+
+**A health check that tests the backend** (c43756e). `GET /api/health` reads the claims table through a read-only connection, so it can't create an empty database, and checks that the policy wording and the instructions exist. It answers 200 when all three pass, or 503 naming the check that failed, so Playwright and monitors can act on the status code.
+
+With pytest:
+
+- [x] A healthy backend answers 200, with each check `ok`
+- [x] An empty database fails the database check with 503
+- [x] A missing database fails the check, and the check doesn't create the file
+- [x] Missing policy wording fails its check, and missing instructions fail theirs
+- [x] A relative `UNDERCOVER_DB` path is checked
+
+**Rebuilding the database** (cfd2d98). `uv run -m backend.seed` rebuilds `undercover.db` from `data/`, putting every claim back in the queue as waiting. Every decision, payment, sign-off and step is lost, so it shows where the claims stand and asks for `yes` first. It keeps the old database in `undercover.backup.db`, replacing any earlier backup, and swaps the new one in atomically. Without a database, it creates one without asking. This replaces deleting `undercover.db`, which Phase 6's `docs/STATUS.md` described.
+
+With pytest:
+
+- [x] Without a database, it creates one without asking
+- [x] Rebuilding puts every claim back in the queue as waiting
+- [x] It says where the claims stand before asking
+- [x] It backs up the database it replaces
+- [x] Anything but `yes` changes nothing
+- [x] It rebuilds a database that can't be read
+
+**Log lines stamped in UTC** (cc5577a). `npm run dev` starts the backend with `backend/log_config.json`, uvicorn's default logging config with formatters that start each line with an ISO 8601 time in UTC, with milliseconds.
+
+With pytest:
+
+- [x] Each log line starts with the time in UTC
+- [x] A request line keeps the request and its status
+
+### The agent
+
+**A health check before working claims** (4307450). The command line reads `GET /api/health` first, and if a check fails it stops before calling the model, saying what the backend can't read.
+
+With pytest, a stub model and the backend in-process:
+
+- [x] A backend that can't read its database: the command says "The backend is running but can't read its database", prints no outcome and exits 1
+- [x] A backend missing its documents: the command says "The backend is running but can't read the policy wording or the agent's instructions" and exits 1
+
+**A throttle on the model's calls** (9272fbb). The model waits for LangChain's `InMemoryRateLimiter` before each call, at 20 calls a minute or `MODEL_REQUESTS_PER_MINUTE`. `run` builds the agent before it starts the claim, so a model that can't be built leaves the claim waiting. A rate limit that refuses a call anyway, after the OpenAI client's own retries, names the claim to run again in place of a traceback.
+
+With pytest and a stub model:
+
+- [x] The model makes at most 20 calls a minute by default
+- [x] `MODEL_REQUESTS_PER_MINUTE` sets the rate
+- [x] A rate that isn't a whole number above 0 is refused, and stops the command before any claim starts
+- [x] The agent waits for the throttle before each model call
+- [x] A model that can't be built leaves the claim waiting
+- [x] A run builds one model, so every claim shares its throttle
+- [x] OpenRouter's rate limit names the claim to run again, and that claim stays in progress
+
+**Each tool result in full** (e2d63ed). A result step holds the tool's whole result, where Phase 3 recorded only its first 200 characters, so a handler can read exactly what the agent read. Steps recorded before this change keep their shortened results. The steps still never go to the console or a log.
+
+With pytest and a stub model:
+
+- [x] A run that reads the policy wording records the whole wording as the result's step
+
+### The dashboard: the queue
+
+**Each claim's decision and payout** (38c0f02). The queue has Decision and Payout columns, with Claimed beside Payout so the two amounts sit side by side. Each claim summary from the backend carries its decision, in the same approve, decline or refer shape as the claim's page, so only an approval has a payout. That includes the summaries that starting, deciding and signing off a claim return.
+
+- [x] pytest: the queue shows each claim's decision and payout
+- [x] vitest: an approval, a decline and a referral each show their label, and only the approvals show a payout
+- [x] Playwright: after the decision on CLM-1001, its row shows Decided, Approved, $420.00 claimed and a $420.00 payout, and CLM-1002's shows Waiting with no decision
+
+**Each claim's customer** (9e0b556). The queue has a Customer column right after the claim id. Only the queue's response carries the name: the claim summary that starting, deciding and signing off return to the agent leaves it out. The queue joins customers with a LEFT JOIN, so a claim whose customer record is missing fails validation rather than dropping out of the queue unworked.
+
+- [x] pytest: only the queue names the customer
+- [x] vitest: each claim's customer shows right after the claim
+- [x] Playwright: the queue's CLM-1001 row names Maya Patel
+
+**Refreshed every two seconds** (ac21cfd). The queue polls `GET /api/claims` every two seconds, as a claim's page does, so statuses, decisions, payouts and the counts follow the agent's changes without a reload. Both pages share the `usePolling` hook. A poll replaces the data without going back to "loading", so the table doesn't flicker. Each open queue tab adds a fetch to the backend's log every two seconds.
+
+- [x] vitest: a claim that moves from waiting to in progress shows its new status and counts within two seconds, without a reload
+- [x] With the queue's poll turned off by hand, that test fails
+- [x] Playwright: starting CLM-1005 through the API while the queue is open shows it in progress without a reload
+
+### The dashboard: a claim's page
+
+**The customer's name** (17e3aa8). "Customer" and the customer's name show under the claim id. The page reads the name from the claim history, which the agent already uses, so the full claim response, the agent's `get_claim` result, still leaves the name out.
+
+- [x] vitest: the claim's page names its customer
+- [x] Playwright: CLM-1002's page names Tom Becker
+
+**The policy at the bottom of the left column** (677fc3c). The policy and plan sit under the claim's documents, and the right column holds only the decision and the agent's steps. On a narrow screen the columns stack, so the policy comes before the decision.
+
+- [x] Playwright: the policy is in the same column as the story, below the documents
+
+**Each tool call with its result** (15290b6). Each tool call shows with its result under it: the opening of the result, and a disclosure button that opens it in full in a scrolling box, with JSON laid out over several lines. A result stays open as the page refreshes. A call with no result, from a run that stopped, says "No result". "Pairing a call with its result", in the approach, explains how results find their calls.
+
+- [x] vitest: each tool call shows with its result, in the order of the calls, when the results arrive in another order
+- [x] vitest: a rerun's result goes to the rerun's call, and the stopped run's call says "No result"
+- [x] vitest: a result shows in full when its disclosure is opened
+- [x] vitest: a JSON result is laid out over several lines
+- [x] vitest: an open result stays open as new steps arrive
+- [x] Playwright: a long result's end is hidden until its disclosure is opened
+- [x] In the browser, with the Playwright MCP server: light and dark mode, at 1280 and 420 pixels wide, with results that came back out of order paired with their calls
+
+### Known issues
+
+- At about 420 pixels wide, the amounts in the Policy panel's plan limits overflow, and the claim's page scrolls sideways by 6 pixels. It came before these changes.
+- Steps recorded before e2d63ed hold only the first 200 characters of each result, so opening one shows only that much. Running the claim again records results in full.
+- The pairing of calls and results can swap two results in the one case "Pairing a call with its result" describes.
+
+### Checks
+
 - [x] `npm run check` passes
