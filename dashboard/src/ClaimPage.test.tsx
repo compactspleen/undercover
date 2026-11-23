@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import type { Claim } from "./api";
 import { ClaimPage } from "./ClaimPage";
 import { fakeBackend, json } from "./testing/fakeBackend";
-import { APPROVAL, CLAIM, POLICY } from "./testing/fixtures";
+import { APPROVAL, CLAIM, HISTORY, POLICY } from "./testing/fixtures";
 
 afterEach(() => {
   cleanup();
@@ -14,6 +14,7 @@ function showClaim(claim: Claim) {
   fakeBackend({
     "GET /api/claims/CLM-1001": json(claim),
     "GET /api/claims/CLM-1001/policy": json(POLICY),
+    "GET /api/claims/CLM-1001/history": json(HISTORY),
   });
   render(<ClaimPage claimId="CLM-1001" />);
 }
@@ -38,6 +39,12 @@ it("shows the claim in full", async () => {
   expect(
     documents.getByText("Hotel Aurelia Fiumicino. Total paid: $245.00."),
   ).toBeDefined();
+});
+
+it("names the claim's customer", async () => {
+  showClaim(CLAIM);
+  const label = await screen.findByText("Customer");
+  expect(label.parentElement?.textContent).toBe("Customer Maya Patel");
 });
 
 it("shows the policy and its plan", async () => {

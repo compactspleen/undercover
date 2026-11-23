@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { Claim, Step } from "./api";
 import { ClaimPage } from "./ClaimPage";
 import { fakeBackend, json, type Answer } from "./testing/fakeBackend";
-import { CLAIM, POLICY } from "./testing/fixtures";
+import { CLAIM, HISTORY, POLICY } from "./testing/fixtures";
 
 const CALL: Step = {
   kind: "tool_call",
@@ -38,7 +38,10 @@ function serve(claim: Claim) {
 }
 
 function showClaim(claim: Claim) {
-  answers = { "GET /api/claims/CLM-1001/policy": json(POLICY) };
+  answers = {
+    "GET /api/claims/CLM-1001/policy": json(POLICY),
+    "GET /api/claims/CLM-1001/history": json(HISTORY),
+  };
   serve(claim);
   fakeBackend(answers);
   render(<ClaimPage claimId="CLM-1001" />);

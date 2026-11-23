@@ -56,6 +56,11 @@ test("a claim shows its decision and steps", async ({ page, request }) => {
   await expect(steps.getByText("Approved and paid $420.00.")).toBeVisible();
 });
 
+test("a claim's page names its customer", async ({ page }) => {
+  await page.goto("/#CLM-1002");
+  await expect(page.getByText("Customer Tom Becker")).toBeVisible();
+});
+
 test("the queue shows each claim's decision and payout", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("row", { name: /^CLM-1001/ })).toHaveText(

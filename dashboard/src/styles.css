@@ -313,6 +313,14 @@ tfoot th {
   gap: 0.75rem;
 }
 
+.customer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
 .eyebrow {
   color: var(--muted);
   font-size: 0.7rem;

@@ -1,18 +1,22 @@
 import { useEffect } from "react";
-import type { Claim, Policy } from "./api";
+import type { Claim, ClaimHistory, Policy } from "./api";
 import { getJson } from "./api";
 import { formatClaimType, formatDate, formatMoney } from "./format";
 import { Decision } from "./Decision";
 import { PolicyPanel } from "./PolicyPanel";
 import { Show, StatusLabel } from "./Show";
 import { Steps } from "./Steps";
-import { useLoaded } from "./useLoaded";
+import { useLoaded, type Loaded } from "./useLoaded";
 
 const POLL_INTERVAL_MS = 2000;
 
 export function ClaimPage({ claimId }: Readonly<{ claimId: string }>) {
   const [claim, reload] = useLoaded(`/api/claims/${claimId}`, getJson<Claim>);
   const [policy] = useLoaded(`/api/claims/${claimId}/policy`, getJson<Policy>);
+  const [history] = useLoaded(
+    `/api/claims/${claimId}/history`,
+    getJson<ClaimHistory>,
+  );
   // The agent keeps adding steps, and a handler may sign off, while the page is open.
   useEffect(() => {
     const timer = setInterval(reload, POLL_INTERVAL_MS);
@@ -24,7 +28,7 @@ export function ClaimPage({ claimId }: Readonly<{ claimId: string }>) {
     <Show loaded={claim}>
       {(value) => (
         <article className="stack">
-          <ClaimHeading claim={value} />
+          <ClaimHeading claim={value} history={history} />
           <div className="columns">
             <div className="stack">
               <Story claim={value} />
@@ -45,7 +49,10 @@ export function ClaimPage({ claimId }: Readonly<{ claimId: string }>) {
   );
 }
 
-function ClaimHeading({ claim }: Readonly<{ claim: Claim }>) {
+function ClaimHeading({
+  claim,
+  history,
+}: Readonly<{ claim: Claim; history: Loaded<ClaimHistory> }>) {
   return (
     <header className="claim-heading">
       <p className="eyebrow">{formatClaimType(claim.claim_type)}</p>
@@ -53,6 +60,13 @@ function ClaimHeading({ claim }: Readonly<{ claim: Claim }>) {
         <span className="mono">{claim.claim_id}</span>{" "}
         <StatusLabel status={claim.status} />
       </h1>
+      <Show loaded={history}>
+        {(found) => (
+          <p className="customer">
+            <span className="eyebrow">Customer</span> {found.name}
+          </p>
+        )}
+      </Show>
       <p className="lead">{claim.summary}</p>
       <p className="meta">
         {claim.incident_location}, {formatDate(claim.incident_date)}. Submitted{" "}

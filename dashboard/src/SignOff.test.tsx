@@ -10,7 +10,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import type { Claim } from "./api";
 import { ClaimPage } from "./ClaimPage";
 import { fakeBackend, json, type Answer } from "./testing/fakeBackend";
-import { APPROVAL, CLAIM, HANDLERS, POLICY } from "./testing/fixtures";
+import { APPROVAL, CLAIM, HANDLERS, HISTORY, POLICY } from "./testing/fixtures";
 
 const OVER_LIMIT: Claim = {
   ...CLAIM,
@@ -38,6 +38,7 @@ function showClaim(claim: Claim, signOff: Answer = json(SIGNED_OFF)) {
   const answers: Record<string, Answer> = {
     "GET /api/claims/CLM-1001": json(claim),
     "GET /api/claims/CLM-1001/policy": json(POLICY),
+    "GET /api/claims/CLM-1001/history": json(HISTORY),
     "GET /api/handlers": json(HANDLERS),
   };
   answers["POST /api/claims/CLM-1001/sign-off"] = () => {

@@ -2,13 +2,14 @@ import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { fakeBackend, json } from "./testing/fakeBackend";
-import { CLAIM, POLICY, QUEUE } from "./testing/fixtures";
+import { CLAIM, HISTORY, POLICY, QUEUE } from "./testing/fixtures";
 
 beforeEach(() => {
   fakeBackend({
     "GET /api/claims": json(QUEUE),
     "GET /api/claims/CLM-1001": json(CLAIM),
     "GET /api/claims/CLM-1001/policy": json(POLICY),
+    "GET /api/claims/CLM-1001/history": json(HISTORY),
   });
 });
 

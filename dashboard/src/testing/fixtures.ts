@@ -1,6 +1,7 @@
 import type {
   Approval,
   Claim,
+  ClaimHistory,
   ClaimStatus,
   Handler,
   Policy,
@@ -103,6 +104,8 @@ export const POLICY: Policy = {
   travelers: ["Maya Patel"],
   status: "active",
 };
+
+export const HISTORY: ClaimHistory = { name: "Maya Patel" };
 
 export const HANDLERS: Handler[] = [
   {

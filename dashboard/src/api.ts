@@ -118,6 +118,10 @@ export interface Policy {
   status: string;
 }
 
+export interface ClaimHistory {
+  name: string;
+}
+
 export interface Handler {
   handler_id: string;
   name: string;
