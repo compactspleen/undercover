@@ -2,7 +2,7 @@ import type { ClaimStatus, QueuedClaim } from "./api";
 import { getJson } from "./api";
 import { formatClaimType, formatMoney } from "./format";
 import { DecisionLabel, Show, StatusLabel } from "./Show";
-import { useLoaded } from "./useLoaded";
+import { useLoaded, usePolling } from "./useLoaded";
 
 const STATUSES: ClaimStatus[] = [
   "waiting",
@@ -12,7 +12,9 @@ const STATUSES: ClaimStatus[] = [
 ];
 
 export function Queue() {
-  const [claims] = useLoaded("/api/claims", getJson<QueuedClaim[]>);
+  const [claims, reload] = useLoaded("/api/claims", getJson<QueuedClaim[]>);
+  // The agent starts and decides claims while the queue is open.
+  usePolling(reload);
   return (
     <section className="stack">
       <h1>Claims queue</h1>

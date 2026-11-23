@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { reasonOf } from "./api";
 
+const POLL_INTERVAL_MS = 2000;
+
 export type Loaded<T> =
   | { state: "loading" }
   | { state: "ready"; value: T }
@@ -24,6 +26,16 @@ export function useLoaded<T>(
   }, [path, read]);
   useEffect(reload, [reload]);
   return [loaded, reload];
+}
+
+/** Call `reload` every two seconds while the page is open, to show the agent's changes. */
+export function usePolling(reload: () => void) {
+  useEffect(() => {
+    const timer = setInterval(reload, POLL_INTERVAL_MS);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [reload]);
 }
 
 function subscribeToHash(onChange: () => void): () => void {

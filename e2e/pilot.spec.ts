@@ -139,3 +139,14 @@ test("an over-limit claim is signed off and then paid", async ({
   ).toBeVisible();
   await expect(decision.getByText(/Paid \$1,250\.00/)).toBeVisible();
 });
+
+test("the queue shows the agent's changes without a reload", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/");
+  const row = page.getByRole("row", { name: /^CLM-1005/ });
+  await expect(row).toContainText("Waiting");
+  await post(request, "CLM-1005/start");
+  await expect(row).toContainText("In progress");
+});

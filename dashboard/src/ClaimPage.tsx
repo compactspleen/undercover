@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import type { Claim, ClaimHistory, Policy } from "./api";
 import { getJson } from "./api";
 import { formatClaimType, formatDate, formatMoney } from "./format";
@@ -6,9 +5,7 @@ import { Decision } from "./Decision";
 import { PolicyPanel } from "./PolicyPanel";
 import { Show, StatusLabel } from "./Show";
 import { Steps } from "./Steps";
-import { useLoaded, type Loaded } from "./useLoaded";
-
-const POLL_INTERVAL_MS = 2000;
+import { useLoaded, usePolling, type Loaded } from "./useLoaded";
 
 export function ClaimPage({ claimId }: Readonly<{ claimId: string }>) {
   const [claim, reload] = useLoaded(`/api/claims/${claimId}`, getJson<Claim>);
@@ -18,12 +15,7 @@ export function ClaimPage({ claimId }: Readonly<{ claimId: string }>) {
     getJson<ClaimHistory>,
   );
   // The agent keeps adding steps, and a handler may sign off, while the page is open.
-  useEffect(() => {
-    const timer = setInterval(reload, POLL_INTERVAL_MS);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [reload]);
+  usePolling(reload);
   return (
     <Show loaded={claim}>
       {(value) => (

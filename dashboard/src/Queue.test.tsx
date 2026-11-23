@@ -1,13 +1,14 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { ClaimStatus, Decision, QueuedClaim } from "./api";
 import { Queue } from "./Queue";
-import { fakeBackend, json } from "./testing/fakeBackend";
+import { fakeBackend, json, type Answer } from "./testing/fakeBackend";
 import { APPROVAL, QUEUE } from "./testing/fixtures";
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 async function rows() {
@@ -121,6 +122,24 @@ it("counts the claims in each status", async () => {
   expect(
     counts.getAllByRole("listitem").map((item) => item.textContent),
   ).toEqual(["Waiting10", "In progress5", "Waiting for sign-off5", "Decided5"]);
+});
+
+it("shows the agent's changes within two seconds, without a reload", async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  const waiting = claim("CLM-1001", "waiting", null);
+  const answers: Record<string, Answer> = {
+    "GET /api/claims": json([waiting]),
+  };
+  fakeBackend(answers);
+  render(<Queue />);
+  expect(await column("Status")).toEqual(["Waiting"]);
+  answers["GET /api/claims"] = json([{ ...waiting, status: "in_progress" }]);
+  await act(() => vi.advanceTimersByTimeAsync(2000));
+  expect(await column("Status")).toEqual(["In progress"]);
+  const counts = within(screen.getByRole("list", { name: "Counts" }));
+  expect(
+    counts.getAllByRole("listitem").map((item) => item.textContent),
+  ).toEqual(["Waiting0", "In progress1", "Waiting for sign-off0", "Decided0"]);
 });
 
 it("shows why the queue couldn't load", async () => {
